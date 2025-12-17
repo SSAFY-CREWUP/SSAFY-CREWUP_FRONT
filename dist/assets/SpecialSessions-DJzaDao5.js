@@ -1,0 +1,1 @@
+import{_ as e,b as o,d as n,q as c}from"./index-DFY6HVr9.js";const t={},a={class:"special-sessions-view"};function i(r,s){return c(),o("div",a,[...s[0]||(s[0]=[n("h3",null,"Special Sessions",-1)])])}const _=e(t,[["render",i]]);export{_ as default};

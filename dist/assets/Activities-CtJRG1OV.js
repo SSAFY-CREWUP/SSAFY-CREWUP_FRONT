@@ -1,0 +1,1 @@
+import{_ as t,b as s,d as i,q as c}from"./index-DFY6HVr9.js";const o={},r={class:"user-activities-view"};function n(a,e){return c(),s("div",r,[...e[0]||(e[0]=[i("h1",null,"My Activities",-1)])])}const d=t(o,[["render",n]]);export{d as default};

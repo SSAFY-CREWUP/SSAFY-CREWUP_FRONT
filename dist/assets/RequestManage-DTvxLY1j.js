@@ -1,0 +1,1 @@
+import{_ as s,b as t,d as a,q as n}from"./index-DFY6HVr9.js";const o={},r={class:"request-manage-view"};function c(_,e){return n(),t("div",r,[...e[0]||(e[0]=[a("h1",null,"Manage Requests",-1)])])}const l=s(o,[["render",c]]);export{l as default};

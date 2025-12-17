@@ -1,0 +1,1 @@
+import{_ as s,b as t,d as n,q as r}from"./index-DFY6HVr9.js";const o={},c={class:"user-settings-view"};function a(i,e){return r(),t("div",c,[...e[0]||(e[0]=[n("h1",null,"User Settings",-1)])])}const d=s(o,[["render",a]]);export{d as default};

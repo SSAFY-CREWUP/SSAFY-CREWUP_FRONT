@@ -1,0 +1,1 @@
+import{_ as s,b as t,d as a,t as o,q as r}from"./index-DFY6HVr9.js";const c={},n={class:"course-detail-view"};function i(e,l){return r(),t("div",n,[a("h1",null,"Course Detail (ID: "+o(e.$route.params.id)+")",1)])}const d=s(c,[["render",i]]);export{d as default};
