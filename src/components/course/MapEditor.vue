@@ -1,45 +1,24 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue'
 import { useCourseStore } from '../../stores/course'
+import { useKakaoMap } from '../../composables/useKakaoMap'
 
 const courseStore = useCourseStore()
 const mapContainer = ref(null)
+const { loadKakaoMap } = useKakaoMap()
+
 let map = null
 let markers = []
 let polyline = null
 
-// ✅ 환경변수에서 키 가져오기 (없으면 바로 문자열로 테스트)
-const KAKAO_KEY = import.meta.env.VITE_KAKAO_MAP_API_KEY 
-
-onMounted(() => {
-  console.log('🔑 현재 API Key:', KAKAO_KEY)
-  // 이미 로드되어 있다면 바로 실행
-  if (window.kakao && window.kakao.maps) {
+onMounted(async () => {
+  try {
+    await loadKakaoMap()
     initMap()
-  } else {
-    // 없으면 스크립트 동적 로딩 시작
-    loadKakaoScript()
+  } catch (error) {
+    console.error('Failed to load Kakao Map:', error)
   }
 })
-
-const loadKakaoScript = () => {
-  const script = document.createElement('script')
-  // ⭐️ autoload=false 필수!
-  script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${KAKAO_KEY}&autoload=false&libraries=services,clusterer,drawing`
-  
-  script.onload = () => {
-    // 스크립트 로드 완료 후, 카카오 내부 로딩 완료 대기
-    window.kakao.maps.load(() => {
-      initMap()
-    })
-  }
-  
-  script.onerror = () => {
-    console.error('❌ 카카오맵 스크립트 로딩 실패 (AdBlock 확인 필요)')
-  }
-  
-  document.head.appendChild(script)
-}
 
 const initMap = () => {
   const options = {

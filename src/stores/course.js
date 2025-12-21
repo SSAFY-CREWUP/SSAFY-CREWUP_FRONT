@@ -7,7 +7,11 @@ export const useCourseStore = defineStore('course', {
             name: '',
             description: '',
             path: [], // Array of {lat, lng}
-            distance: 0
+            distance: 0,
+            expectedTime: null,
+            difficulty: 'Normal',
+            thumbnailFile: null,
+            thumbnailPreview: null
         },
         courses: [],
         isDrawing: true,
@@ -60,7 +64,11 @@ export const useCourseStore = defineStore('course', {
                 name: '',
                 description: '',
                 path: [],
-                distance: 0
+                distance: 0,
+                expectedTime: null,
+                difficulty: 'Normal',
+                thumbnailFile: null,
+                thumbnailPreview: null
             }
             this.isDrawing = true
         },
