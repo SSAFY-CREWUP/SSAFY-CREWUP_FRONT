@@ -2,6 +2,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCrewStore } from '../../stores/crew'
+import { useAuthStore } from '../../stores/auth'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import 'dayjs/locale/ko'
@@ -31,10 +32,9 @@ const formatTime = (time) => {
   return date.fromNow()
 }
 
-const handleCommand = (command) => {
+const handleCommand = async (command) => {
   if (command === 'logout') {
-    // Implement logout logic
-    console.log('Logging out...')
+    await useAuthStore().logout()
     router.push('/login')
   } else if (command === 'profile') {
     router.push('/profile')

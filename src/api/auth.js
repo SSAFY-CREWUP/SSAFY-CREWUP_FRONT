@@ -1,55 +1,48 @@
 import axios from 'axios'
 
 const api = axios.create({
-    baseURL: 'http://localhost:3000' // Placeholder base URL
+    baseURL: import.meta.env.VITE_API_BASE_URL || '',
+    headers: {
+        'Content-Type': 'application/json'
+    },
+    withCredentials: true
 })
 
 export default {
     login(credentials) {
-        // Mocking API response for now as no backend is running
-        return new Promise((resolve, reject) => {
-            setTimeout(() => {
-                if (credentials.email === 'test@crewup.com' && credentials.password === 'password') {
-                    resolve({
-                        data: {
-                            token: 'mock-jwt-token',
-                            user: { name: 'Test User', email: credentials.email },
-                            isNewUser: false
-                        }
-                    })
-                } else if (credentials.email === 'new@crewup.com' && credentials.password === 'password') {
-                    resolve({
-                        data: {
-                            token: 'mock-jwt-token-new',
-                            user: { name: 'New User', email: credentials.email },
-                            isNewUser: true
-                        }
-                    })
-                } else {
-                    reject(new Error('Invalid credentials'))
-                }
-            }, 1000)
-        })
-        // return api.post('/api/auth/login', credentials)
+        return api.post('/api/v1/user/login', credentials)
+    },
+    logout() {
+        return api.post('/api/v1/user/logout')
     },
     signup(userData) {
-        return new Promise((resolve) => {
-            setTimeout(() => {
-                resolve({
-                    data: {
-                        token: 'mock-jwt-token-new',
-                        user: { name: userData.name, email: userData.email }
-                    }
-                })
-            }, 1000)
+        const formData = new FormData()
+
+        const requestData = {
+            email: userData.email,
+            password: userData.password,
+            nickname: userData.name
+        }
+
+        const jsonBlob = new Blob([JSON.stringify(requestData)], { type: "application/json" })
+        formData.append("request", jsonBlob)
+
+        if (userData.profileImage) {
+            formData.append("profileImage", userData.profileImage)
+        }
+
+        return api.post('/api/v1/user/signup', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data'
+            }
         })
     },
     submitOnboarding(data) {
-        return new Promise((resolve) => {
-            setTimeout(() => {
-                console.log('Onboarding Data:', data)
-                resolve({ success: true })
-            }, 1000)
+        return api.put('/api/v1/user/add/info', {
+            gender: data.gender === 'male' ? 'MALE' : 'FEMALE',
+            birthDate: data.birthDate,
+            averagePace: data.averagePace,
+            activityRegion: data.region
         })
     }
 }

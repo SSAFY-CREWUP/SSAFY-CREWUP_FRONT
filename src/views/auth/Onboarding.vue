@@ -35,9 +35,9 @@ const slides = [
 
 // User Info Form
 const form = reactive({
-  birthdate: '',
+  birthDate: '',
   gender: '',
-  pace: 30, // minutes for 5km? No, user said "Average Pace". Usually min/km. Let's use slider 3'00" ~ 10'00"
+  pace: 30, 
   region: ''
 })
 
@@ -46,7 +46,7 @@ const formatPace = (val) => {
   const totalSeconds = 180 + (val * 6) // 3:00 starts at 0. 60 steps.
   const min = Math.floor(totalSeconds / 60)
   const sec = totalSeconds % 60
-  return `${min}'${sec.toString().padStart(2, '0')}"`
+  return `${min}'${sec.toString().padStart(2, '0')}\"`
 }
 
 const handleStart = () => {
@@ -54,7 +54,7 @@ const handleStart = () => {
 }
 
 const handleComplete = async () => {
-  if (!form.birthdate || !form.gender || !form.region) {
+  if (!form.birthDate || !form.gender || !form.region) {
     alert('모든 정보를 입력해주세요.')
     return
   }
@@ -63,7 +63,7 @@ const handleComplete = async () => {
   try {
     const success = await authStore.submitOnboarding({
       ...form,
-      pace: formatPace(form.pace)
+      averagePace: formatPace(form.pace)
     })
     
     if (success) {
@@ -114,7 +114,7 @@ const handleComplete = async () => {
       <div class="form-content">
         <div class="form-group">
           <label>생년월일</label>
-          <input type="date" v-model="form.birthdate" class="input-field" />
+          <input type="date" v-model="form.birthDate" class="input-field" />
         </div>
 
         <div class="form-group">
@@ -143,14 +143,95 @@ const handleComplete = async () => {
           <label>활동 지역</label>
           <select v-model="form.region" class="input-field">
             <option value="" disabled>지역을 선택해주세요</option>
-            <option value="seoul">서울</option>
-            <option value="gyeonggi">경기</option>
-            <option value="incheon">인천</option>
-            <option value="busan">부산</option>
-            <option value="daegu">대구</option>
-            <option value="daejeon">대전</option>
-            <option value="gwangju">광주</option>
-            <option value="ulsan">울산</option>
+            <optgroup label="서울">
+                <option value="서울_강남구">강남구</option>
+                <option value="서울_강동구">강동구</option>
+                <option value="서울_강북구">강북구</option>
+                <option value="서울_강서구">강서구</option>
+                <option value="서울_관악구">관악구</option>
+                <option value="서울_광진구">광진구</option>
+                <option value="서울_구로구">구로구</option>
+                <option value="서울_금천구">금천구</option>
+                <option value="서울_노원구">노원구</option>
+                <option value="서울_도봉구">도봉구</option>
+                <option value="서울_동대문구">동대문구</option>
+                <option value="서울_동작구">동작구</option>
+                <option value="서울_마포구">마포구</option>
+                <option value="서울_서대문구">서대문구</option>
+                <option value="서울_서초구">서초구</option>
+                <option value="서울_성동구">성동구</option>
+                <option value="서울_성북구">성북구</option>
+                <option value="서울_송파구">송파구</option>
+                <option value="서울_양천구">양천구</option>
+                <option value="서울_영등포구">영등포구</option>
+                <option value="서울_용산구">용산구</option>
+                <option value="서울_은평구">은평구</option>
+                <option value="서울_종로구">종로구</option>
+                <option value="서울_중구">중구</option>
+                <option value="서울_중랑구">중랑구</option>
+            </optgroup>
+            <optgroup label="경기">
+                <option value="경기_고양시">고양시</option>
+                <option value="경기_과천시">과천시</option>
+                <option value="경기_광명시">광명시</option>
+                <option value="경기_구리시">구리시</option>
+                <option value="경기_군포시">군포시</option>
+                <option value="경기_김포시">김포시</option>
+                <option value="경기_남양주시">남양주시</option>
+                <option value="경기_부천시">부천시</option>
+                <option value="경기_성남시">성남시</option>
+                <option value="경기_수원시">수원시</option>
+                <option value="경기_시흥시">시흥시</option>
+                <option value="경기_안산시">안산시</option>
+                <option value="경기_안양시">안양시</option>
+                <option value="경기_용인시">용인시</option>
+                <option value="경기_의정부시">의정부시</option>
+                <option value="경기_파주시">파주시</option>
+                <option value="경기_평택시">평택시</option>
+                <option value="경기_하남시">하남시</option>
+                <option value="경기_화성시">화성시</option>
+            </optgroup>
+            <optgroup label="인천">
+                <option value="인천_계양구">계양구</option>
+                <option value="인천_남동구">남동구</option>
+                <option value="인천_부평구">부평구</option>
+                <option value="인천_연수구">연수구</option>
+                <option value="인천_중구">중구</option>
+                <option value="인천_서구">서구</option>
+            </optgroup>
+            <optgroup label="부산">
+                <option value="부산_해운대구">해운대구</option>
+                <option value="부산_수영구">수영구</option>
+                <option value="부산진구">부산진구</option>
+            </optgroup>
+            <optgroup label="대구">
+                <option value="대구_수성구">수성구</option>
+                <option value="대구_중구">중구</option>
+            </optgroup>
+            <optgroup label="광주">
+                <option value="광주_서구">서구</option>
+                <option value="광주_동구">동구</option>
+            </optgroup>
+            <optgroup label="대전">
+                <option value="대전_유성구">유성구</option>
+                <option value="대전_서구">서구</option>
+            </optgroup>
+            <optgroup label="울산">
+                <option value="울산_남구">남구</option>
+                <option value="울산_중구">중구</option>
+            </optgroup>
+            <optgroup label="세종">
+                <option value="세종특별자치시">세종특별자치시</option>
+            </optgroup>
+            <optgroup label="강원">
+                <option value="강원_춘천시">춘천시</option>
+                <option value="강원_강릉시">강릉시</option>
+                <option value="강원_원주시">원주시</option>
+            </optgroup>
+            <optgroup label="제주">
+                <option value="제주_제주시">제주시</option>
+                <option value="제주_서귀포시">서귀포시</option>
+            </optgroup>
           </select>
         </div>
       </div>

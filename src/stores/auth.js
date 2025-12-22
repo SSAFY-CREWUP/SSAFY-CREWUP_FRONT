@@ -45,24 +45,31 @@ export const useAuthStore = defineStore('auth', {
                 this.loading = false
             }
         },
-        logout() {
-            this.user = null
-            this.token = null
-            localStorage.removeItem('token')
-            localStorage.removeItem('user')
+        async logout() {
+            try {
+                await authApi.logout()
+            } catch (error) {
+                console.error('Logout failed:', error)
+            } finally {
+                this.user = null
+                this.token = null
+                localStorage.removeItem('token')
+                localStorage.removeItem('user')
+            }
         },
         async signup(userData) {
             this.loading = true
             this.error = null
             try {
                 const response = await authApi.signup(userData)
-                const { token, user } = response.data
 
-                this.token = token
-                this.user = user
-
-                localStorage.setItem('token', token)
-                localStorage.setItem('user', JSON.stringify(user))
+                if (response.data && response.data.token) {
+                    const { token, user } = response.data
+                    this.token = token
+                    this.user = user
+                    localStorage.setItem('token', token)
+                    localStorage.setItem('user', JSON.stringify(user))
+                }
 
                 return true
             } catch (error) {
