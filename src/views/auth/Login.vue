@@ -118,16 +118,7 @@ const togglePasswordVisibility = () => {
             계정이 없으신가요? <RouterLink to="/signup">회원가입</RouterLink>
           </div>
 
-          <!-- Social Login -->
-          <div class="social-login">
-            <div class="divider">
-              <span>또는</span>
-            </div>
-            <div class="social-buttons">
-              <button type="button" class="social-btn kakao">카카오 로그인</button>
-              <button type="button" class="social-btn google">Google 로그인</button>
-            </div>
-          </div>
+
         </form>
       </div>
     </div>
