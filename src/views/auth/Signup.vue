@@ -4,7 +4,9 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '../../stores/auth'
 import useVuelidate from '@vuelidate/core'
 import { required, email, minLength, sameAs } from '@vuelidate/validators'
+
 import { ElMessage } from 'element-plus'
+import { Camera } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -25,6 +27,28 @@ const rules = computed(() => ({
 
 const v$ = useVuelidate(rules, form)
 
+const fileInput = ref(null)
+const profileImage = ref(null)
+const previewImage = ref(null)
+
+const triggerFileInput = () => {
+  fileInput.value.click()
+}
+
+const handleFileChange = (event) => {
+  const file = event.target.files[0]
+  if (file) {
+    // Validate file type and size if needed
+    if (!file.type.startsWith('image/')) {
+        ElMessage.error('이미지 파일만 업로드 가능합니다.')
+        return
+    }
+    
+    profileImage.value = file
+    previewImage.value = URL.createObjectURL(file)
+  }
+}
+
 const handleSignup = async () => {
   const isFormCorrect = await v$.value.$validate()
   if (!isFormCorrect) return
@@ -32,7 +56,8 @@ const handleSignup = async () => {
   const success = await authStore.signup({
     name: form.name,
     email: form.email,
-    password: form.password
+    password: form.password,
+    profileImage: profileImage.value
   })
 
   if (success) {
@@ -53,6 +78,26 @@ const handleSignup = async () => {
       </div>
 
       <form @submit.prevent="handleSignup" class="signup-form">
+        <div class="profile-upload-section">
+            <div class="avatar-wrapper" @click="triggerFileInput">
+                <img v-if="previewImage" :src="previewImage" class="avatar-preview" />
+                <div v-else class="avatar-placeholder">
+                    <el-icon :size="40" color="#999"><Camera /></el-icon>
+                </div>
+                <div class="avatar-overlay">
+                    <span>변경</span>
+                </div>
+            </div>
+            <input 
+                type="file" 
+                ref="fileInput" 
+                @change="handleFileChange" 
+                accept="image/*" 
+                style="display: none" 
+            />
+            <p class="profile-hint">프로필 사진</p>
+        </div>
+
         <div class="form-group">
           <label>이름</label>
           <input 
@@ -161,6 +206,77 @@ const handleSignup = async () => {
   margin-bottom: 8px;
   font-weight: 600;
   color: #333;
+}
+
+.profile-upload-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 24px;
+}
+
+.avatar-wrapper {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    overflow: hidden;
+    position: relative;
+    cursor: pointer;
+    background-color: #f0f0f0;
+    border: 2px solid #ddd;
+    transition: all 0.3s ease;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.avatar-wrapper:hover {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 15px rgba(0,0,0,0.1);
+}
+
+.avatar-preview {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.avatar-placeholder {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+}
+
+.avatar-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.avatar-wrapper:hover .avatar-overlay {
+    opacity: 1;
+}
+
+.avatar-overlay span {
+    color: white;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.profile-hint {
+    margin-top: 8px;
+    font-size: 0.9rem;
+    color: #666;
 }
 
 .input-field {
