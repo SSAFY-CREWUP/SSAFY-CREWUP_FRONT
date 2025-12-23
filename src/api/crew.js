@@ -2,62 +2,54 @@ import axios from 'axios'
 
 // Mock Data Generation
 const generateMockCrews = (count) => {
-    const regions = ['서울 강남구', '서울 마포구', '서울 영등포구', '서울 송파구', '경기 성남시']
+    // Import constants concepts here (mocking imports for simplicity in single file var scope if needed, but better to use raw strings matching constants)
+    const regions = [
+        '서울 강남구', '서울 마포구', '서울 영등포구', '서울 송파구', '경기 성남시',
+        '서울 강서구', '서울 관악구', '경기 수원시', '부산 해운대구'
+    ]
+    const times = [
+        '오전 (06:00 ~ 12:00)',
+        '점심 (12:00 ~ 14:00)',
+        '저녁 (18:00 ~ 21:00)',
+        '야간 (21:00 ~ 24:00)'
+    ]
+    const ageOptions = ['전연령', '1020', '2030', '3040', '4050']
+    const genderOptions = ['모두', '남성', '여성']
 
-    const times = ['평일 저녁', '주말 오전', '평일 아침', '주말 오후']
-    const ages = ['2030', '3040', '전연령', '20대']
-    const genders = ['혼성', '남성', '여성']
-
-    return Array.from({ length: count }, (_, i) => ({
-        id: i + 1,
-        name: `Crew ${i + 1}`,
-        location: regions[Math.floor(Math.random() * regions.length)],
-        members: Math.floor(Math.random() * 200) + 10,
-        pace: `${Math.floor(Math.random() * 4) + 4}:${Math.floor(Math.random() * 60).toString().padStart(2, '0')}`,
-        image: `https://picsum.photos/seed/${i + 1}/300/200`,
-        activityTime: times[Math.floor(Math.random() * times.length)],
-        memberInfo: `${ages[Math.floor(Math.random() * ages.length)]} / ${genders[Math.floor(Math.random() * genders.length)]}`
-    }))
+    return Array.from({ length: count }, (_, i) => {
+        const age = ageOptions[Math.floor(Math.random() * ageOptions.length)]
+        const gender = genderOptions[Math.floor(Math.random() * genderOptions.length)]
+        
+        return {
+            id: i + 1,
+            name: `Run Crew ${i + 1}`,
+            location: regions[Math.floor(Math.random() * regions.length)],
+            members: Math.floor(Math.random() * 200) + 5,
+            pace: `${Math.floor(Math.random() * 4) + 4}:${Math.floor(Math.random() * 60).toString().padStart(2, '0')}`,
+            image: `https://picsum.photos/seed/crew${i + 1}/400/250`,
+            activityTime: times[Math.floor(Math.random() * times.length)],
+            ageRange: age,
+            genderLimit: gender,
+            memberInfo: `${age} / ${gender}` // For display convenience
+        }
+    })
 }
 
-const allCrews = generateMockCrews(50)
+const allCrews = generateMockCrews(60)
 
-// Mock Votes Data (In-memory state)
-const mockVotes = [
-    {
-        id: 1,
-        title: '12월 회식 장소 투표',
-        status: 'progress',
-        endDate: '2024-12-30',
-        maxParticipants: 20,
-        total: 15,
-        participants: []
-    },
-    {
-        id: 2,
-        title: '다음 주 LSD 코스 선정',
-        status: 'closed',
-        endDate: '2024-11-20',
-        maxParticipants: 30,
-        total: 5,
-        participants: [
-            { id: 1, name: '김러너', votedAt: '2024-11-19 10:00:00', status: 'pending' },
-            { id: 2, name: '이초보', votedAt: '2024-11-19 10:05:00', status: 'approved' },
-            { id: 3, name: '박고수', votedAt: '2024-11-19 09:30:00', status: 'pending' },
-            { id: 4, name: '최조깅', votedAt: '2024-11-19 11:00:00', status: 'pending' },
-            { id: 5, name: '정마라', votedAt: '2024-11-19 09:45:00', status: 'approved' }
-        ]
-    }
-]
+// Helper to convert pace string "5:30" to float 5.5
+const parsePace = (paceStr) => {
+    const [min, sec] = paceStr.split(':').map(Number)
+    return min + (sec / 60)
+}
 
 export default {
     getCrews(params) {
-        // Simulate API call with delay
         return new Promise((resolve) => {
             setTimeout(() => {
                 let filtered = [...allCrews]
 
-                // Filter by Search (Name or Location)
+                // 1. Search (Name or Location)
                 if (params.search) {
                     const query = params.search.toLowerCase()
                     filtered = filtered.filter(c =>
@@ -66,46 +58,59 @@ export default {
                     )
                 }
 
-                // Filter by Region
+                // 2. Region Filter
                 if (params.region && params.region !== '전체') {
-                    if (params.region === '서울') {
-                        filtered = filtered.filter(c => c.location.startsWith('서울'))
+                    // Check if specific region (full match) or broad region (startswith)
+                    // Constants have specific formats like "서울 강남구". 
+                    // Filter might pass "서울" (broad) or "서울 강남구" (specific).
+                    if (['서울', '경기', '인천', '강원'].includes(params.region)) {
+                         filtered = filtered.filter(c => c.location.startsWith(params.region))
                     } else {
-                        filtered = filtered.filter(c => c.location === params.region)
+                         filtered = filtered.filter(c => c.location === params.region)
                     }
                 }
 
-                // Filter by Pace Range
+                // 3. Pace Range Filter
                 if (params.paceRange && params.paceRange.length === 2) {
                     const [min, max] = params.paceRange
                     filtered = filtered.filter(c => {
-                        const [minPace, secPace] = c.pace.split(':').map(Number)
-                        const paceVal = minPace + (secPace / 60)
-                        return paceVal >= min && paceVal <= max
+                        const val = parsePace(c.pace)
+                        return val >= min && val <= max
                     })
                 }
 
-                // Filter by Time
+                // 4. Activity Time Filter (Checkbox array)
                 if (params.times && params.times.length > 0) {
                     filtered = filtered.filter(c => {
+                        // Check if crew's time is in the selected list
+                        // Crew time format: "오전 (06:00 ~ 12:00)"
+                        // Filter param: ["오전", "저녁"] (simplified keys?)
+                        // Let's assume params.times sends full strings or keywords.
+                        // Ideally checking substring inclusion:
                         return params.times.some(t => c.activityTime.includes(t))
                     })
                 }
 
-                // Sorting
+                // 5. Age Filter
+                if (params.ages && params.ages.length > 0) {
+                     filtered = filtered.filter(c => params.ages.includes(c.ageRange))
+                }
+
+                // 6. Gender Filter
+                if (params.genders && params.genders.length > 0) {
+                    filtered = filtered.filter(c => params.genders.includes(c.genderLimit))
+                }
+
+                // 7. Sorting
                 if (params.sortBy) {
                     const direction = params.sortDirection === 'asc' ? 1 : -1
                     filtered.sort((a, b) => {
                         if (params.sortBy === 'latest') {
-                            return (a.id - b.id) * direction // Assuming higher ID is newer
+                            return (b.id - a.id) * direction // ID-based proxy for "latest"
                         } else if (params.sortBy === 'popular') {
-                            return (a.members - b.members) * direction
+                            return (Number(a.members) - Number(b.members)) * direction
                         } else if (params.sortBy === 'pace') {
-                            const getPaceVal = (paceStr) => {
-                                const [min, sec] = paceStr.split(':').map(Number)
-                                return min + (sec / 60)
-                            }
-                            return (getPaceVal(a.pace) - getPaceVal(b.pace)) * direction
+                            return (parsePace(a.pace) - parsePace(b.pace)) * direction
                         }
                         return 0
                     })
@@ -126,7 +131,7 @@ export default {
                         last: end >= filtered.length
                     }
                 })
-            }, 500)
+            }, 400)
         })
     },
     getCrew(id) {
