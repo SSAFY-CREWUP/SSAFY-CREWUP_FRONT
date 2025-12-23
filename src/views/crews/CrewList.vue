@@ -199,8 +199,9 @@ onMounted(() => {
   padding: 20px 0;
   border-bottom: 1px solid var(--color-border-light);
   position: sticky;
-  top: 64px; /* Navbar height */
-  z-index: 100;
+  top: 60px; /* Adjust based on actual Navbar height */
+  z-index: 99;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.03);
 }
 
 .search-container {
@@ -217,7 +218,7 @@ onMounted(() => {
 
 .search-icon {
   position: absolute;
-  left: 16px;
+  left: 20px;
   top: 50%;
   transform: translateY(-50%);
   color: var(--color-text-tertiary);
@@ -226,17 +227,19 @@ onMounted(() => {
 
 .search-input {
   width: 100%;
-  padding: 16px 16px 16px 48px;
+  padding: 16px 16px 16px 52px;
   border: 1px solid var(--color-border-medium);
   border-radius: 50px;
   font-size: 1rem;
   outline: none;
-  transition: border-color 0.3s, box-shadow 0.3s;
+  transition: all 0.3s;
+  background-color: var(--color-bg-tertiary);
 }
 
 .search-input:focus {
-  border-color: var(--color-running-green);
-  box-shadow: 0 0 0 4px rgba(76, 175, 80, 0.1);
+  border-color: var(--color-primary);
+  background-color: white;
+  box-shadow: 0 0 0 4px var(--color-primary-50);
 }
 
 .search-btn {
@@ -244,36 +247,44 @@ onMounted(() => {
   right: 8px;
   top: 50%;
   transform: translateY(-50%);
-  background-color: var(--color-running-green);
+  background-color: var(--color-primary);
   color: white;
   border: none;
-  padding: 8px 20px;
+  padding: 10px 24px;
   border-radius: 30px;
   font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all 0.2s;
 }
 
 .search-btn:hover {
-  background-color: #3d8b40;
+  background-color: var(--color-primary-600);
 }
 
 /* Content Layout */
 .content-container {
-  max-width: 1200px;
+  max-width: 1280px;
   margin: 0 auto;
   padding: 40px 20px;
   display: flex;
-  gap: 30px;
+  gap: 40px;
+  align-items: flex-start; /* Important for sticky sidebar */
 }
 
 .sidebar {
-  width: 25%;
-  min-width: 280px;
+  width: 280px;
+  flex-shrink: 0;
+  position: sticky;
+  top: 160px; /* Header (60) + Search (approx 80) + gap */
+  max-height: calc(100vh - 180px);
+  overflow-y: auto;
+  /* Hide scrollbar for cleaner look */
+  scrollbar-width: thin;
 }
 
 .main-content {
   flex: 1;
+  min-width: 0; /* Prevents flex item from overflowing */
 }
 
 /* List Header */
@@ -281,24 +292,29 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
 }
 
 .total-count {
-  font-weight: 600;
-  color: var(--color-text-secondary);
+  font-weight: 700;
+  color: var(--color-text-primary);
+  font-size: 1.1rem;
 }
 
 .sort-buttons {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
+  background: white;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--color-border-light);
 }
 
 .sort-btn {
   background: none;
   border: none;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   color: var(--color-text-tertiary);
   cursor: pointer;
   padding: 4px 8px;
@@ -306,10 +322,11 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 4px;
+  font-weight: 500;
 }
 
 .sort-btn.active {
-  color: var(--color-text-primary);
+  color: var(--color-primary);
   font-weight: 700;
 }
 
@@ -320,13 +337,22 @@ onMounted(() => {
 .divider {
   color: var(--color-border-medium);
   font-size: 0.8rem;
+  height: 12px;
+  width: 1px;
+  background-color: var(--color-border-medium);
 }
 
 /* Grid */
 .crew-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
+  gap: 24px;
+}
+
+/* Empty State */
+.empty-state {
+    padding: 60px 0;
+    text-align: center;
 }
 
 /* Loading */
@@ -335,31 +361,44 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-top: 20px;
+  margin-top: 40px;
 }
 
 /* Responsive */
-@media (max-width: 1024px) {
-  .crew-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
+@media (max-width: 1200px) {
+    .crew-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 900px) {
   .content-container {
     flex-direction: column;
   }
 
   .sidebar {
     width: 100%;
+    position: static;
+    margin-bottom: 20px;
   }
 
   .crew-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
   }
   
   .search-header {
-    top: 56px; /* Mobile Navbar height adjustment if needed */
+    top: 56px; 
   }
+}
+
+@media (max-width: 600px) {
+    .crew-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .sort-buttons {
+        gap: 8px;
+        padding: 4px 8px;
+    }
 }
 </style>

@@ -1,27 +1,54 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useCrewStore } from '../../stores/crew'
-import { ArrowLeft, Share } from '@element-plus/icons-vue'
-import CrewInfo from '../../components/crew/CrewInfo.vue'
-import CrewDescription from '../../components/crew/CrewDescription.vue'
+import { useCrewStore } from '@/stores/crew'
+import { ArrowLeft, Share, Location, User, Clock, Timer, Check, UserFilled, Female, Male, Coordinate } from '@element-plus/icons-vue'
 import JoinModal from '../../components/crew/JoinModal.vue'
 
 const route = useRoute()
 const router = useRouter()
-import kakao from '../../api/kakao'
-
 const crewStore = useCrewStore()
-
-const handleShare = () => {
-  // Placeholder for Kakao share integration
-  console.log('Sharing crew via Kakao')
-  // Example: kakao.shareCrew(crewStore.currentCrew)
-}
 const crewId = route.params.id
 
 const loading = ref(true)
 const showJoinModal = ref(false)
+
+const handleShare = () => {
+    // Check if Kakao SDK is available
+    if (window.Kakao) {
+        if (!window.Kakao.isInitialized()) {
+             window.Kakao.init(import.meta.env.VITE_KAKAO_API_KEY); 
+        }
+        
+        window.Kakao.Share.sendDefault({
+            objectType: 'feed',
+            content: {
+                title: crewStore.currentCrew.name,
+                description: crewStore.currentCrew.intro,
+                imageUrl: crewStore.currentCrew.image,
+                link: {
+                    mobileWebUrl: window.location.href,
+                    webUrl: window.location.href,
+                },
+            },
+            buttons: [
+                {
+                    title: '크루 구경가기',
+                    link: {
+                        mobileWebUrl: window.location.href,
+                        webUrl: window.location.href,
+                    },
+                },
+            ],
+        })
+    } else {
+        console.warn('Kakao SDK not loaded')
+        // Fallback: Copy to clipboard
+        navigator.clipboard.writeText(window.location.href).then(() => {
+            alert('주소가 복사되었습니다.');
+        })
+    }
+}
 
 onMounted(async () => {
   try {
@@ -46,26 +73,142 @@ const goBack = () => {
         <el-icon :size="24"><ArrowLeft /></el-icon>
       </button>
       <h1 class="header-title">{{ crewStore.currentCrew.name }}</h1>
-      <div class="header-actions">
-        <button class="btn-icon" @click="handleShare">
-          <el-icon :size="24"><Share /></el-icon>
-        </button>
-      </div>
+      <button class="btn-icon" @click="handleShare">
+        <el-icon :size="24"><Share /></el-icon>
+      </button>
     </header>
 
-    <div class="content-wrapper">
-      <!-- Left Column: Crew Info -->
-      <CrewInfo 
-        :crew="crewStore.currentCrew" 
-        class="info-column-wrapper"
-        @open-join-modal="showJoinModal = true" 
-      />
+    <div class="content-container">
+        <!-- Hero Section -->
+        <section class="hero-section">
+            <div class="hero-image-wrapper">
+                <img :src="crewStore.currentCrew.image" :alt="crewStore.currentCrew.name" class="hero-image" />
+            </div>
+        </section>
 
-      <!-- Right Column: Details -->
-      <CrewDescription 
-        :crew="crewStore.currentCrew" 
-        class="detail-column-wrapper"
-      />
+        <!-- Main Info -->
+        <section class="info-section">
+            <h1 class="crew-title">{{ crewStore.currentCrew.name }}</h1>
+            
+            <div class="info-grid-container">
+                <div class="info-row">
+                    <!-- Location -->
+                    <div class="info-item">
+                        <div class="icon-box location">
+                            <el-icon><Location /></el-icon>
+                        </div>
+                        <div class="info-content">
+                            <span class="label">활동 지역</span>
+                            <span class="value">{{ crewStore.currentCrew.location }}</span>
+                        </div>
+                    </div>
+                     <!-- Members -->
+                     <div class="info-item">
+                        <div class="icon-box user">
+                             <el-icon><User /></el-icon>
+                        </div>
+                        <div class="info-content">
+                            <span class="label">멤버</span>
+                            <span class="value">{{ crewStore.currentCrew.members }}명</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="info-row">
+                    <!-- Pace -->
+                    <div class="info-item">
+                        <div class="icon-box timer">
+                             <el-icon><Timer /></el-icon>
+                        </div>
+                         <div class="info-content">
+                            <span class="label">평균 페이스</span>
+                            <span class="value">{{ crewStore.currentCrew.pace }}</span>
+                        </div>
+                    </div>
+                     <!-- Time -->
+                    <div class="info-item">
+                         <div class="icon-box time">
+                             <el-icon><Clock /></el-icon>
+                        </div>
+                        <div class="info-content">
+                            <span class="label">활동 시간</span>
+                            <span class="value">{{ crewStore.currentCrew.activityTime }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                 <div class="info-row">
+                    <!-- Age -->
+                    <div class="info-item">
+                        <div class="icon-box age">
+                             <el-icon><UserFilled /></el-icon>
+                        </div>
+                         <div class="info-content">
+                            <span class="label">연령대</span>
+                            <span class="value">{{ crewStore.currentCrew.ageRange || '전연령' }}</span>
+                        </div>
+                    </div>
+                     <!-- Gender -->
+                    <div class="info-item">
+                         <div class="icon-box gender">
+                             <el-icon><Coordinate /></el-icon>
+                        </div>
+                        <div class="info-content">
+                            <span class="label">성별 제한</span>
+                            <span class="value">{{ crewStore.currentCrew.genderLimit || '무관' }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <div class="divider"></div>
+
+        <!-- Description -->
+        <section class="content-section">
+            <h3 class="section-title">크루 소개</h3>
+            <p class="intro-text">{{ crewStore.currentCrew.intro }}</p>
+        </section>
+
+         <!-- Activities -->
+        <section class="content-section">
+             <h3 class="section-title">주요 활동</h3>
+            <ul class="activity-list">
+                <li v-for="(activity, index) in crewStore.currentCrew.activities" :key="index">
+                <el-icon color="var(--color-primary)" class="check-icon"><Check /></el-icon>
+                {{ activity }}
+                </li>
+            </ul>
+        </section>
+
+
+        <!-- Member Preview -->
+        <section class="content-section member-section">
+            <div class="section-header-row">
+                <h3 class="section-title">멤버 ({{ crewStore.currentCrew.members }})</h3>
+                <!-- <button class="btn-text">모두 보기</button> -->
+            </div>
+            <div class="member-preview-list">
+                <div class="member-avatars">
+                    <img 
+                    v-for="member in crewStore.currentCrew.previewMembers" 
+                    :key="member.id" 
+                    :src="member.image" 
+                    class="member-avatar" 
+                    />
+                    <div class="more-avatar" v-if="crewStore.currentCrew.members > 5">
+                        +{{ crewStore.currentCrew.members - 5 }}
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Bottom Action -->
+        <div class="bottom-action-bar">
+            <button class="btn-join" @click="showJoinModal = true">
+                가입 신청하기
+            </button>
+        </div>
     </div>
 
     <!-- Join Modal -->
@@ -74,16 +217,17 @@ const goBack = () => {
       :crew-id="crewId" 
     />
   </div>
-  <div v-else class="loading-state">Loading...</div>
+  <div v-else class="loading-state">
+      <div class="spinner"></div>
+      Loading...
+  </div>
 </template>
 
 <style scoped>
 .crew-detail-view {
-  max-width: 1000px;
-  margin: 0 auto;
-  padding-bottom: 40px;
-  background: #fff;
   min-height: 100vh;
+  background-color: #fff;
+  padding-bottom: 100px; /* Space for bottom bar */
 }
 
 /* Header */
@@ -91,375 +235,322 @@ const goBack = () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px 20px;
+  padding: 0 20px;
+  height: 56px;
   position: sticky;
   top: 0;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
+  background: white;
   z-index: 100;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--color-border-light);
 }
 
 .header-title {
   font-size: 1.1rem;
   font-weight: 700;
-  margin: 0;
-}
-
-.btn-icon {
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 4px;
-  display: flex;
-  align-items: center;
-  color: #333;
-}
-
-/* Content Layout */
-.content-wrapper {
-  display: flex;
-  flex-direction: column;
-}
-
-@media (min-width: 768px) {
-  .content-wrapper {
-    flex-direction: row;
-    padding: 20px;
-    gap: 30px;
-  }
-
-  .info-column-wrapper {
-    flex: 0 0 40%;
-    position: sticky;
-    top: 80px;
-    height: fit-content;
-  }
-
-  .detail-column-wrapper {
-    flex: 1;
-  }
-}
-
-.loading-state {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
-  color: #888;
-}
-</style>
-
-<style scoped>
-.crew-detail-view {
-  max-width: 1000px;
-  margin: 0 auto;
-  padding-bottom: 40px;
-  background: #fff;
-  min-height: 100vh;
-}
-
-/* Header */
-.detail-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px 20px;
-  position: sticky;
-  top: 0;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  z-index: 100;
-  border-bottom: 1px solid #eee;
-}
-
-.header-title {
-  font-size: 1.1rem;
-  font-weight: 700;
-  margin: 0;
-}
-
-.btn-icon {
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 4px;
-  display: flex;
-  align-items: center;
-  color: #333;
-}
-
-/* Content Layout */
-.content-wrapper {
-  display: flex;
-  flex-direction: column;
-}
-
-@media (min-width: 768px) {
-  .content-wrapper {
-    flex-direction: row;
-    padding: 20px;
-    gap: 30px;
-  }
-
-  .info-column {
-    flex: 0 0 40%;
-    position: sticky;
-    top: 80px;
-    height: fit-content;
-  }
-
-  .detail-column {
-    flex: 1;
-  }
-}
-
-/* Info Column */
-.crew-image-container {
-  width: 100%;
-  aspect-ratio: 4/3;
+  color: var(--color-text-primary);
+  flex: 1;
+  text-align: center;
+  white-space: nowrap;
   overflow: hidden;
-  position: relative;
+  text-overflow: ellipsis;
+  padding: 0 10px;
 }
 
-@media (min-width: 768px) {
-  .crew-image-container {
-    border-radius: 16px;
-  }
-}
-
-.crew-image {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.info-card {
-  padding: 20px;
-}
-
-.rating-badge {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  margin-bottom: 8px;
-}
-
-.rating-score {
-  font-weight: 700;
-  font-size: 1.1rem;
-}
-
-.review-count {
-  color: #888;
-  font-size: 0.9rem;
-}
-
-.crew-name-large {
-  font-size: 1.8rem;
-  font-weight: 800;
-  margin: 0 0 12px 0;
-  line-height: 1.3;
-}
-
-.meta-info {
-  display: flex;
-  gap: 16px;
-  color: #666;
-  margin-bottom: 16px;
-  font-size: 0.95rem;
-}
-
-.meta-item {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 24px;
-}
-
-.tag {
-  background: #f0f2f5;
-  color: #555;
-  padding: 6px 12px;
-  border-radius: 20px;
-  font-size: 0.85rem;
-  font-weight: 500;
-}
-
-.btn-join-large {
-  width: 100%;
-  padding: 16px;
-  background: var(--color-primary);
-  color: black;
+.btn-icon {
+  background: none;
   border: none;
-  border-radius: 12px;
-  font-size: 1.1rem;
-  font-weight: 700;
   cursor: pointer;
-  transition: transform 0.2s;
-  box-shadow: 0 4px 12px rgba(var(--color-primary-rgb), 0.3);
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  color: var(--color-text-primary);
+  transition: color 0.2s;
 }
 
-.btn-join-large:active {
-  transform: scale(0.98);
+.btn-icon:hover {
+    color: var(--color-primary);
 }
 
-/* Detail Column */
-.detail-section {
-  padding: 20px;
-  border-bottom: 1px solid #f0f0f0;
+.content-container {
+    max-width: 800px;
+    margin: 0 auto;
 }
 
-@media (min-width: 768px) {
-  .detail-section {
-    padding: 0 0 40px 0;
-    border-bottom: none;
-  }
+/* Hero */
+.hero-section {
+    padding: 20px;
 }
 
-.detail-section h3 {
-  font-size: 1.2rem;
-  font-weight: 700;
-  margin: 0 0 16px 0;
-  color: #333;
+.hero-image-wrapper {
+    width: 100%;
+    aspect-ratio: 16/9;
+    border-radius: 20px;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+}
+
+.hero-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.hero-overlay {
+    position: absolute;
+    bottom: 16px;
+    left: 16px;
+}
+
+.location-badge {
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 6px 12px;
+    border-radius: 30px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    backdrop-filter: blur(4px);
+}
+
+/* Info Section */
+.info-section {
+    padding: 20px 24px;
+}
+
+.crew-title {
+    font-size: 1.8rem;
+    font-weight: 800;
+    margin-bottom: 24px;
+    color: var(--color-text-primary);
+    line-height: 1.3;
+}
+
+.info-grid-container {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    background: #FAFAFA;
+    padding: 24px;
+    border-radius: 20px;
+    margin-bottom: 20px;
+}
+
+.info-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+.info-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.icon-box {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    flex-shrink: 0;
+}
+
+/* Icon Colors */
+.icon-box.location { background: #E3F2FD; color: #1E88E5; }
+.icon-box.user { background: #E8F5E9; color: #43A047; }
+.icon-box.timer { background: #FFF3E0; color: #FB8C00; }
+.icon-box.time { background: #F3E5F5; color: #8E24AA; }
+.icon-box.age { background: #E0F7FA; color: #00ACC1; }
+.icon-box.gender { background: #FCE4EC; color: #D81B60; }
+
+.info-content {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.label {
+    font-size: 0.8rem;
+    color: var(--color-text-tertiary);
+    font-weight: 500;
+}
+
+.value {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--color-text-primary);
+}
+
+.divider {
+    height: 8px;
+    background: var(--color-bg-secondary);
+    width: 100%;
+}
+
+/* Content Section */
+.content-section {
+    padding: 30px 24px;
+    border-bottom: 1px solid var(--color-border-light);
+}
+
+.section-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 16px;
+    color: var(--color-text-primary);
 }
 
 .intro-text {
-  line-height: 1.6;
-  color: #444;
-  white-space: pre-line;
+    line-height: 1.7;
+    color: var(--color-text-secondary);
+    white-space: pre-line;
+    font-size: 1rem;
 }
 
 .activity-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
+    list-style: none;
+    padding: 0;
 }
 
 .activity-list li {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  margin-bottom: 12px;
-  line-height: 1.5;
-  color: #444;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+    font-size: 1rem;
+    color: var(--color-text-secondary);
 }
 
 .check-icon {
-  margin-top: 2px;
+    font-size: 1.2rem;
 }
 
-.section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-}
-
-.more-link {
-  color: #888;
-  font-size: 0.9rem;
-  cursor: pointer;
+/* Member Section */
+.section-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
 }
 
 .member-avatars {
-  display: flex;
-  gap: -10px; /* Overlap effect */
+    display: flex;
+    align-items: center;
 }
 
 .member-avatar {
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-  border: 2px solid white;
-  object-fit: cover;
-  margin-right: -10px;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: 3px solid white;
+    margin-right: -12px;
+    object-fit: cover;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
 }
 
 .more-avatar {
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-  background: #f0f2f5;
-  border: 2px solid white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 600;
-  color: #666;
-  font-size: 0.9rem;
-  z-index: 1;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--color-bg-secondary);
+    border: 3px solid white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    color: var(--color-text-secondary);
+    font-size: 0.9rem;
+    margin-left: -12px;
+    z-index: 2;
 }
 
-/* Modal */
-.modal-content {
-  padding: 10px 0;
+/* Bottom Action */
+.bottom-action-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 20px;
+    background: white;
+    border-top: 1px solid var(--color-border-light);
+    display: flex;
+    justify-content: center;
+    z-index: 99;
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.05);
 }
 
-.form-group {
-  margin-bottom: 24px;
+.btn-join {
+    width: 100%;
+    max-width: 800px;
+    padding: 18px;
+    background-color: var(--color-primary);
+    color: white;
+    border: none;
+    border-radius: 16px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
 }
 
-.form-group label {
-  display: block;
-  font-weight: 600;
-  margin-bottom: 8px;
-  color: #333;
-}
-
-.pace-slider-container {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.pace-value {
-  font-weight: 700;
-  color: var(--color-primary);
-  min-width: 50px;
-  text-align: right;
-}
-
-.checkbox-group {
-  margin-bottom: 0;
-}
-
-.dialog-footer {
-  display: flex;
-  gap: 10px;
-  justify-content: flex-end;
-}
-
-.btn-cancel {
-  padding: 10px 20px;
-  background: #f5f5f5;
-  border: none;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.btn-submit {
-  padding: 10px 20px;
-  background: var(--color-primary);
-  color: black;
-  border: none;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
+.btn-join:active {
+    transform: scale(0.98);
 }
 
 .loading-state {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
-  color: #888;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    color: var(--color-text-tertiary);
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--color-bg-secondary);
+    border-top-color: var(--color-primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+@media (max-width: 768px) {
+    .content-container {
+        padding: 0;
+    }
+    
+    .hero-section {
+        padding: 0;
+    }
+    
+    .hero-image-wrapper {
+        border-radius: 0;
+        aspect-ratio: 16/10;
+    }
+    
+    .info-grid {
+        gap: 8px;
+    }
+    
+    .label {
+        font-size: 0.75rem;
+    }
+    
+    .value {
+        font-size: 0.9rem;
+    }
 }
 </style>
