@@ -114,14 +114,14 @@ export default {
             ageGroups: params.ages, // ages array
             minPace: params.paceRange ? params.paceRange[0] : undefined,
             maxPace: params.paceRange ? params.paceRange[1] : undefined,
-            sort: params.sortBy === 'latest' ? 'CREATED_AT' : 
-                   (params.sortBy === 'popular' ? 'MEMBER_COUNT' : 
-                   (params.sortBy === 'pace' ? 'AVERAGE_PACE' : undefined)),
+            sort: params.sortBy === 'latest' ? 'CREATED_AT' :
+                (params.sortBy === 'popular' ? 'MEMBER_COUNT' :
+                    (params.sortBy === 'pace' ? 'AVERAGE_PACE' : undefined)),
             order: params.sortDirection ? params.sortDirection.toUpperCase() : undefined,
             page: params.page,
             size: params.size
         }
-        
+
         // Remove undefined keys
         Object.keys(qp).forEach(key => qp[key] === undefined && delete qp[key])
         // Serialize arrays nicely (axios does this by default usually as key[], check if backend needs repeated keys)
@@ -228,6 +228,14 @@ export default {
     },
     getMembers(crewId) {
         return api.get(`/api/v1/crew/${crewId}/members`)
+    },
+    getWaitingMembers(crewId) {
+        return api.get(`/api/v1/crew/${crewId}/members/waiting`)
+    },
+    approveMember(crewId, memberId) {
+        return api.put(`/api/v1/crew/${crewId}/members/${memberId}/status`, {
+            status: 'ACCEPTED'
+        })
     },
     updateMemberRole(crewId, memberId, role) {
         return new Promise((resolve) => {
@@ -582,8 +590,8 @@ export default {
         return api.get(`/api/v1/crew/${crewId}/votes`).then(response => {
             const data = response.data.data
             // Merge active and ended votes, map to frontend format
-            const active = (data.activeVotes || []).map(v => ({...v, status: 'progress'}))
-            const ended = (data.endedVotes || []).map(v => ({...v, status: 'closed'}))
+            const active = (data.activeVotes || []).map(v => ({ ...v, status: 'progress' }))
+            const ended = (data.endedVotes || []).map(v => ({ ...v, status: 'closed' }))
             const merged = [...active, ...ended].map(v => ({
                 id: v.voteId,
                 title: v.title,
@@ -593,7 +601,7 @@ export default {
                 status: v.status || (v.isClosed ? 'closed' : 'progress'),
                 // For preview details, we might need to fetch individual, but list displays minimal info
                 hasVoted: v.hasVoted, // Map hasVoted from backend
-                participants: Array(v.participantCount || 0).fill({}), 
+                participants: Array(v.participantCount || 0).fill({}),
                 allowMultiple: v.multipleChoice || false,
                 isAnonymous: v.isAnonymous || false,
                 options: (v.options || []).map(o => ({
@@ -609,24 +617,24 @@ export default {
         })
     },
     getVoteResults(voteId) {
-         return api.get(`/api/v1/vote/${voteId}/results`).then(response => {
-             const data = response.data.data
-             return {
-                 id: data.voteId,
-                 title: data.title,
-                 isAnonymous: data.isAnonymous,
-                 allowMultiple: false, // Not in result response? check backend
-                 options: data.options.map(opt => ({
-                     id: opt.optionId,
-                     text: opt.content,
-                     voters: (opt.voters || []).map(v => ({
+        return api.get(`/api/v1/vote/${voteId}/results`).then(response => {
+            const data = response.data.data
+            return {
+                id: data.voteId,
+                title: data.title,
+                isAnonymous: data.isAnonymous,
+                allowMultiple: false, // Not in result response? check backend
+                options: data.options.map(opt => ({
+                    id: opt.optionId,
+                    text: opt.content,
+                    voters: (opt.voters || []).map(v => ({
                         name: v.nickname,
                         image: v.profileImage, // Handle if null?
                         votedAt: v.votedAt
-                     }))
-                 }))
-             }
-         })
+                    }))
+                }))
+            }
+        })
     },
     castVote(crewId, voteId, selectedOptionIds) {
         return api.post(`/api/v1/vote/${voteId}/cast`, { optionIds: selectedOptionIds })

@@ -37,15 +37,15 @@ const props = defineProps({
       </div>
 
       <!-- Manager Section -->
-      <div v-if="userStats.role === '크루장' || userStats.role === '매니저'" class="nav-section">
+      <div v-if="['크루장', '매니저', 'LEADER', 'MANAGER'].includes(userStats.role)" class="nav-section">
         <div class="nav-section-title">크루 관리</div>
         <div 
           class="nav-item"
-          :class="{ active: isActive('settings') }"
-          @click="navigateTo('settings')"
+          :class="{ active: isActive('manage/requests') }"
+          @click="navigateTo('manage/requests')"
         >
-          <el-icon :size="20"><Setting /></el-icon>
-          <span>크루 설정</span>
+          <el-icon :size="20"><UserFilled /></el-icon>
+          <span>가입 신청 관리</span>
         </div>
       </div>
 
