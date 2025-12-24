@@ -7,7 +7,6 @@ export const useCrewStore = defineStore('crew', {
         crews: [],
         currentCrew: null,
         requests: [],
-        requests: [],
         members: [],
         withdrawnMembers: [],
         notifications: [],
@@ -31,11 +30,13 @@ export const useCrewStore = defineStore('crew', {
                 this.loading = false
             }
         },
-        async fetchRequests(crewId) {
+        async fetchWaitingMembers(crewId) {
             this.loading = true
             try {
-                const res = await crewApi.getRequests(crewId)
-                this.requests = res.data
+                const res = await crewApi.getWaitingMembers(crewId)
+                console.log('API Response for Waiting Members:', res) // Log added
+                // Use requests state or create a new one. Since requests is unused by real logic yet, use it.
+                this.requests = res.data.data
             } finally {
                 this.loading = false
             }
@@ -57,9 +58,20 @@ export const useCrewStore = defineStore('crew', {
                 this.loading = false
             }
         },
+        async approveMember(crewId, memberId) {
+            await crewApi.approveMember(crewId, memberId)
+
+            // Remove from requests list (RequestManage.vue)
+            this.requests = this.requests.filter(m => m.memberId !== memberId)
+
+            // Update members list if present (optional, usually fetchMembers is called separately)
+            // If we want to move it to members list dynamically:
+            // const approvedMember = this.requests.find(...) // but we just filtered it out. 
+            // Ideally, we should just let fetchMembers handle the members list update next time it's visited.
+        },
         async updateMemberRole(crewId, memberId, role) {
             await crewApi.updateMemberRole(crewId, memberId, role)
-            const member = this.members.find(m => m.id === memberId)
+            const member = this.members.find(m => m.memberId === memberId)
             if (member) member.role = role
         },
         async kickMember(crewId, memberId) {
