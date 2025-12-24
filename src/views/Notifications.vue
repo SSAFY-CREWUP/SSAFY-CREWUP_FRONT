@@ -1,14 +1,7 @@
 <script setup>
 import { onMounted, computed } from 'vue'
 import { useCrewStore } from '../stores/crew'
-import dayjs from 'dayjs'
-import relativeTime from 'dayjs/plugin/relativeTime'
-import 'dayjs/locale/ko'
-import { Bell } from '@element-plus/icons-vue'
-
-dayjs.extend(relativeTime)
-dayjs.locale('ko')
-
+import { Bell, Close } from '@element-plus/icons-vue'
 const crewStore = useCrewStore()
 const notifications = computed(() => crewStore.notifications)
 
@@ -16,15 +9,13 @@ onMounted(() => {
   crewStore.fetchNotifications()
 })
 
-const formatTime = (time) => {
-  const date = dayjs(time)
-  const now = dayjs()
-  const diffDays = now.diff(date, 'day')
-
-  if (diffDays >= 3) {
-    return date.format('YYYY.MM.DD HH:mm')
+const handleDelete = async (id) => {
+  if (!confirm('알림을 삭제하시겠습니까?')) return
+  try {
+    await crewStore.deleteNotification(id)
+  } catch (error) {
+    console.error('Failed to delete notification:', error)
   }
-  return date.fromNow()
 }
 </script>
 
@@ -43,11 +34,16 @@ const formatTime = (time) => {
 
       <div v-else v-for="item in notifications" :key="item.id" class="notification-card">
         <div class="card-header">
-          <span class="crew-name">{{ item.crewName }}</span>
-          <span class="time">{{ formatTime(item.time) }}</span>
+          <div class="header-left">
+            <span class="crew-name">{{ item.crewName }}</span>
+            <span class="time">{{ item.relativeTime }}</span>
+          </div>
+          <el-button link class="delete-btn" @click.stop="handleDelete(item.id)">
+            <el-icon><Close /></el-icon>
+          </el-button>
         </div>
         <div class="card-body">
-          <p class="title">{{ item.title }}</p>
+          <p class="title">{{ item.content }}</p>
         </div>
       </div>
     </div>
@@ -99,8 +95,24 @@ const formatTime = (time) => {
 .card-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   margin-bottom: 8px;
+}
+
+.header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.delete-btn {
+  color: var(--color-text-tertiary);
+  padding: 0;
+  height: auto;
+}
+
+.delete-btn:hover {
+  color: var(--color-accent-red);
 }
 
 .crew-name {

@@ -284,63 +284,7 @@ const togglePasswordVisibility = () => {
   text-decoration: none;
 }
 
-.social-login {
-  margin-top: 40px;
-}
 
-.divider {
-  position: relative;
-  text-align: center;
-  margin-bottom: 20px;
-}
-
-.divider::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 50%;
-  width: 100%;
-  height: 1px;
-  background: #eee;
-}
-
-.divider span {
-  position: relative;
-  background: white;
-  padding: 0 10px;
-  color: #999;
-  font-size: 0.85rem;
-}
-
-.social-buttons {
-  display: flex;
-  gap: 10px;
-}
-
-.social-btn {
-  flex: 1;
-  padding: 10px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  background: white;
-  font-size: 0.9rem;
-  cursor: pointer;
-  transition: background 0.3s;
-}
-
-.social-btn:hover {
-  background: #f9f9f9;
-}
-
-.social-btn.kakao {
-  background: #FEE500;
-  border-color: #FEE500;
-  color: #000;
-}
-
-.social-btn.kakao:hover {
-  background: #E6CF00;
-}
 
 /* Right Section */
 .login-image-section {

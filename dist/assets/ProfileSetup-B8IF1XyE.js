@@ -1,1 +1,0 @@
-import{_ as t,b as o,d as s,q as r}from"./index-DFY6HVr9.js";const n={},c={class:"profile-setup-view"};function a(l,e){return r(),o("div",c,[...e[0]||(e[0]=[s("h1",null,"Profile Setup",-1)])])}const i=t(n,[["render",a]]);export{i as default};

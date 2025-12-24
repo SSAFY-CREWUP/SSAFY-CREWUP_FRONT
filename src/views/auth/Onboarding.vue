@@ -2,6 +2,7 @@
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../../stores/auth'
+import { regions } from '../../constants/regions'
 import { Swiper, SwiperSlide } from 'swiper/vue'
 import { Pagination, Navigation } from 'swiper/modules'
 import 'swiper/css'
@@ -143,6 +144,7 @@ const handleComplete = async () => {
           <label>활동 지역</label>
           <select v-model="form.region" class="input-field">
             <option value="" disabled>지역을 선택해주세요</option>
+<<<<<<< Updated upstream
             <optgroup label="서울">
                 <option value="서울_강남구">강남구</option>
                 <option value="서울_강동구">강동구</option>
@@ -232,6 +234,11 @@ const handleComplete = async () => {
                 <option value="제주_제주시">제주시</option>
                 <option value="제주_서귀포시">서귀포시</option>
             </optgroup>
+=======
+            <option v-for="region in regions" :key="region.value" :value="region.value">
+              {{ region.label }}
+            </option>
+>>>>>>> Stashed changes
           </select>
         </div>
       </div>

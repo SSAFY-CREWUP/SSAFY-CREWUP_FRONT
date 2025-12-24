@@ -15,8 +15,29 @@ const form = reactive({
   name: '',
   email: '',
   password: '',
-  confirmPassword: ''
+  confirmPassword: '',
+  profileImage: null
 })
+
+const previewImage = ref(null)
+
+const handleFileChange = (event) => {
+  const file = event.target.files[0]
+  if (file) {
+    if (file.size > 5 * 1024 * 1024) {
+      ElMessage.warning('이미지 크기는 5MB 이하여야 합니다.')
+      return
+    }
+    form.profileImage = file
+    
+    // Create preview
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      previewImage.value = e.target.result
+    }
+    reader.readAsDataURL(file)
+  }
+}
 
 const rules = computed(() => ({
   name: { required },
@@ -57,7 +78,11 @@ const handleSignup = async () => {
     name: form.name,
     email: form.email,
     password: form.password,
+<<<<<<< Updated upstream
     profileImage: profileImage.value
+=======
+    profileImage: form.profileImage
+>>>>>>> Stashed changes
   })
 
   if (success) {
@@ -96,6 +121,26 @@ const handleSignup = async () => {
                 style="display: none" 
             />
             <p class="profile-hint">프로필 사진</p>
+        </div>
+
+        <div class="form-group">
+          <label>프로필 이미지 (선택)</label>
+          <div class="profile-upload">
+            <div class="preview-box" @click="$refs.fileInput.click()">
+              <img v-if="previewImage" :src="previewImage" alt="Preview" />
+              <div v-else class="upload-placeholder">
+                <span class="plus-icon">+</span>
+                <span>이미지 업로드</span>
+              </div>
+            </div>
+            <input 
+              ref="fileInput"
+              type="file" 
+              accept="image/*"
+              @change="handleFileChange"
+              style="display: none"
+            />
+          </div>
         </div>
 
         <div class="form-group">
@@ -338,5 +383,49 @@ const handleSignup = async () => {
   color: var(--color-primary);
   font-weight: 600;
   text-decoration: none;
+}
+
+.profile-upload {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.preview-box {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  border: 2px dashed #ddd;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  overflow: hidden;
+  position: relative;
+  transition: all 0.2s;
+}
+
+.preview-box:hover {
+  border-color: var(--color-primary);
+  background: #f9f9f9;
+}
+
+.preview-box img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.upload-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: #999;
+  font-size: 0.8rem;
+}
+
+.plus-icon {
+  font-size: 1.5rem;
+  margin-bottom: 4px;
 }
 </style>

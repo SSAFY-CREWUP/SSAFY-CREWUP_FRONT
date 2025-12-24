@@ -1,15 +1,17 @@
 import { defineStore } from 'pinia'
 import crewApi from '../api/crew'
+import scheduleApi from '../api/schedule'
 
 export const useCrewStore = defineStore('crew', {
     state: () => ({
         crews: [],
         currentCrew: null,
         requests: [],
-        members: [],
+        requests: [],
         members: [],
         withdrawnMembers: [],
         notifications: [],
+        unreadCount: 0,
         loading: false
     }),
     actions: {
@@ -105,17 +107,42 @@ export const useCrewStore = defineStore('crew', {
         },
         async fetchEvents(crewId) {
             try {
-                const response = await crewApi.getEvents(crewId)
-                return response.data
+                const response = await scheduleApi.getScheduleList(crewId)
+                // Filter out null/undefined events and map to view format
+                return response.data.data.map(event => ({
+                    id: event.scheduleId,
+                    title: event.title,
+                    date: event.runDate.split('T')[0],
+                    time: event.runDate.split('T')[1].substring(0, 5),
+                    location: event.location,
+                    participants: event.currentPeople,
+                    maxParticipants: event.maxPeople,
+                    content: event.content,
+                    members: event.members,
+                    type: event.scheduleType
+                }))
             } catch (error) {
                 console.error('Failed to fetch events:', error)
                 throw error
             }
         },
 
+
         async addEvent(crewId, eventData) {
             try {
-                const response = await crewApi.addEvent(crewId, eventData)
+                // Map the frontend form data to the backend expectation
+                const requestData = {
+                    courseId: eventData.courseId,
+                    title: eventData.title,
+                    // Combine date and time (e.g., "2025-12-26 20:00:00")
+                    // Note: User example used space, so we use space. If backend requires T, we can change it.
+                    runDate: `${eventData.date} ${eventData.time}:00`,
+                    location: eventData.location,
+                    maxPeople: eventData.maxParticipants,
+                    content: eventData.content,
+                    scheduleType: eventData.type
+                }
+                const response = await scheduleApi.createSchedule(crewId, requestData)
                 return response.data
             } catch (error) {
                 console.error('Failed to add event:', error)
@@ -124,20 +151,40 @@ export const useCrewStore = defineStore('crew', {
         },
         async deleteEvent(crewId, eventId) {
             try {
-                await crewApi.deleteEvent(crewId, eventId)
+                await scheduleApi.deleteSchedule(crewId, eventId)
             } catch (error) {
                 console.error('Failed to delete event:', error)
                 throw error
             }
         },
         async joinEvent(crewId, eventId) {
-            await crewApi.joinEvent(crewId, eventId)
+            try {
+                await scheduleApi.joinSchedule(eventId)
+                // Refresh events list to reflect the change
+                await this.fetchEvents(crewId)
+            } catch (error) {
+                // If the backend returns a specific error for "already joined", we can handle it here or let the component handle it
+                console.error('Failed to join event:', error)
+                throw error
+            }
+        },
+        async confirmEvent(crewId, eventId) {
+            // API not ready yet
+            console.log('API not ready: confirmEvent', eventId)
+        },
+        async updateEventParticipantStatus(crewId, eventId, memberId, status) {
+            // API not ready yet
+            console.log('API not ready: updateStatus', eventId, memberId, status)
         },
         async cancelJoinEvent(crewId, eventId) {
             await crewApi.cancelJoinEvent(crewId, eventId)
         },
-        async updateEventParticipantStatus(crewId, eventId, participantId, status) {
-            await crewApi.updateEventParticipantStatus(crewId, eventId, participantId, status)
+        async updateEventParticipantStatus(crewId, eventId, scheduleMemberId, status) {
+            await scheduleApi.updateParticipantStatus(eventId, scheduleMemberId, status)
+        },
+        async checkScheduleCreator(scheduleId) {
+            const res = await scheduleApi.checkCreator(scheduleId)
+            return res.data
         },
         async confirmEvent(crewId, eventId) {
             await crewApi.confirmEvent(crewId, eventId)
@@ -177,8 +224,22 @@ export const useCrewStore = defineStore('crew', {
         },
         async fetchNotifications() {
             const res = await crewApi.getNotifications()
-            this.notifications = res.data
-            return res.data
+            this.notifications = res.data.data
+            return res.data.data
+        },
+        async fetchUnreadCount() {
+            const res = await crewApi.getUnreadCount()
+            this.unreadCount = res.data.data.unreadCount
+            return res.data.data.unreadCount
+        },
+        async markAllNotificationsRead() {
+            await crewApi.markAllRead()
+            this.unreadCount = 0
+        },
+        async deleteNotification(notificationId) {
+            console.log('Deleting notification:', notificationId)
+            await crewApi.deleteNotification(notificationId)
+            this.notifications = this.notifications.filter(n => n.id !== notificationId)
         }
     }
 })

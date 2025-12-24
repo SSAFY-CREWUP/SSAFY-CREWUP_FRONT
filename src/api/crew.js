@@ -1,4 +1,5 @@
 import axios from 'axios'
+import api from './axios'
 
 // Mock Data Generation
 const generateMockCrews = (count) => {
@@ -787,50 +788,18 @@ export default {
     },
 
     // Notifications API
+    // Notifications API
     getNotifications() {
-        return new Promise((resolve) => {
-            setTimeout(() => {
-                const now = new Date()
-                const notifications = [
-                    {
-                        id: 1,
-                        type: 'member',
-                        title: '새로운 멤버 "박러너"님이 가입했습니다.',
-                        crewName: '러닝 크루 A',
-                        time: new Date(now.getTime() - 1000 * 60 * 5).toISOString() // 5m ago
-                    },
-                    {
-                        id: 2,
-                        type: 'vote',
-                        title: '투표 "12월 회식 장소"가 등록되었습니다.',
-                        crewName: '새벽 달리기',
-                        time: new Date(now.getTime() - 1000 * 60 * 60).toISOString() // 1h ago
-                    },
-                    {
-                        id: 3,
-                        type: 'vote_closing',
-                        title: '투표 "주말 LSD 코스" 마감 3시간 전입니다.',
-                        crewName: '러닝 크루 A',
-                        time: new Date(now.getTime() - 1000 * 60 * 60 * 2).toISOString() // 2h ago
-                    },
-                    {
-                        id: 4,
-                        type: 'schedule',
-                        title: '내일 오전 7시 "주말 LSD" 일정이 있습니다.',
-                        crewName: '러닝 크루 A',
-                        time: new Date(now.getTime() - 1000 * 60 * 60 * 12).toISOString() // 12h ago
-                    },
-                    {
-                        id: 5,
-                        type: 'vote_closed',
-                        title: '투표 "유니폼 디자인"이 마감되었습니다.',
-                        crewName: '새벽 달리기',
-                        time: new Date(now.getTime() - 1000 * 60 * 60 * 24 * 2).toISOString() // 2d ago
-                    }
-                ]
-                resolve({ data: notifications })
-            }, 500)
-        })
+        return api.get('/api/v1/notification/list')
+    },
+    getUnreadCount() {
+        return api.get('/api/v1/notification/unread-count')
+    },
+    markAllRead() {
+        return api.put('/api/v1/notification/read-all')
+    },
+    deleteNotification(notificationId) {
+        return api.delete(`/api/v1/notification/${notificationId}`)
     }
 }
 

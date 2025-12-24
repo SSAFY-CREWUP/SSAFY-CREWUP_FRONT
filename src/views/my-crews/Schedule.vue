@@ -18,6 +18,7 @@ const fetchEvents = async () => {
   loading.value = true
   try {
     const data = await crewStore.fetchEvents(crewId)
+    console.log('[DEBUG] Fetched Events:', data)
     events.value = data
   } finally {
     loading.value = false
@@ -69,21 +70,23 @@ const canDeleteEvent = (event) => {
 }
 
 const getEventTypeColor = (type) => {
+  const safeType = type ? type.toLowerCase() : 'regular'
   const map = {
-    regular: '#4CAF50',
-    special: '#FF9800',
-    lightning: '#2196F3'
+    regular: '#4CAF50', // Green
+    event: '#2196F3',   // Blue
+    lightning: '#FFC107' // Yellow
   }
-  return map[type] || '#999'
+  return map[safeType] || '#999'
 }
 
 const getEventTypeName = (type) => {
+  const safeType = type ? type.toLowerCase() : 'regular'
   const map = {
     regular: '정기',
-    special: '이벤트',
+    event: '이벤트',
     lightning: '번개'
   }
-  return map[type] || '기타'
+  return map[safeType] || '기타'
 }
 
 const showAddModal = ref(false)
@@ -104,7 +107,11 @@ const handleDelete = async (eventId) => {
     await crewStore.deleteEvent(crewId, eventId)
     await fetchEvents() // Refresh list
   } catch (error) {
-    alert('일정 삭제에 실패했습니다.')
+    if (error.response && error.response.status === 403) {
+      alert('일정을 등록한 사람만 삭제할 수 있습니다.')
+    } else {
+      alert('일정 삭제에 실패했습니다.')
+    }
   }
 }
 

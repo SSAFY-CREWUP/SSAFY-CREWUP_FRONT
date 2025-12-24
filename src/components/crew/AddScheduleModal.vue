@@ -19,7 +19,7 @@ const form = ref({
   location: '',
   maxParticipants: 10,
   content: '',
-  type: 'regular',
+  type: 'REGULAR',
   courseId: null
 })
 
@@ -29,17 +29,19 @@ const route = useRoute()
 const crewId = route.params.id
 
 onMounted(async () => {
-  try {
-    scrappedCourses.value = await crewStore.fetchScrappedCourses(crewId)
-  } catch (error) {
-    console.error('Failed to fetch scrapped courses', error)
-  }
+  // Mock courses for now as the API is not ready
+  scrappedCourses.value = [
+    { id: 1, title: '코스 1' },
+    { id: 2, title: '코스 2' },
+    { id: 3, title: '코스 3' },
+    { id: 4, title: '코스 4' }
+  ]
 })
 
 const eventTypes = [
-  { label: '정기 러닝', value: 'regular' },
-  { label: '이벤트', value: 'special' },
-  { label: '번개', value: 'lightning' }
+  { label: '정기 러닝', value: 'REGULAR' },
+  { label: '이벤트', value: 'EVENT' },
+  { label: '번개', value: 'LIGHTNING' }
 ]
 
 const close = () => {
@@ -55,7 +57,7 @@ const resetForm = () => {
     location: '',
     maxParticipants: 10,
     content: '',
-    type: 'regular',
+    type: 'REGULAR',
     courseId: null
   }
 }
@@ -84,9 +86,10 @@ const handleSubmit = () => {
           <el-radio-button 
             v-for="type in eventTypes" 
             :key="type.value" 
-            :label="type.label" 
-            :value="type.value" 
-          />
+            :label="type.value" 
+          >
+            {{ type.label }}
+          </el-radio-button>
         </el-radio-group>
       </div>
 

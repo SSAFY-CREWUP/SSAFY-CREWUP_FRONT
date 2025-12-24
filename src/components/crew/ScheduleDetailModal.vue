@@ -2,7 +2,7 @@
 import { ref, defineProps, defineEmits, onMounted, watch } from 'vue'
 import { useCrewStore } from '../../stores/crew'
 import { useRoute } from 'vue-router'
-import { Location, Clock, User, Check, Close } from '@element-plus/icons-vue'
+import { Location, Clock, User } from '@element-plus/icons-vue'
 
 const props = defineProps({
   modelValue: {
@@ -25,33 +25,42 @@ const event = ref(null)
 const loading = ref(false)
 const participants = ref([])
 const isParticipating = ref(false)
-const isManager = ref(true) // Mock: Assume manager for now
+const isCreator = ref(false)
 
 const fetchEventDetails = async () => {
   if (!props.eventId) return
   
   loading.value = true
   try {
-    // In a real app, you might have a specific API for event details including participants
-    // For now, we'll simulate fetching details and participants
     const allEvents = await crewStore.fetchEvents(crewId)
     event.value = allEvents.find(e => e.id === props.eventId)
     
-    if (event.value) {
-      // Mock participants data if not present
-      if (!event.value.participantList) {
-        participants.value = [
-          { id: 1, name: '김러너', status: 'pending', image: 'https://picsum.photos/seed/p1/50/50' },
-          { id: 2, name: '이초보', status: 'attended', image: 'https://picsum.photos/seed/p2/50/50' },
-          { id: 3, name: '박고수', status: 'pending', image: 'https://picsum.photos/seed/p3/50/50' }
-        ]
-      } else {
-        participants.value = event.value.participantList
-      }
-      
-      // Check if current user is participating (Mock)
-      isParticipating.value = participants.value.some(p => p.id === 999) // 999 is mock current user ID
+    // Check if current user is creator
+    try {
+        const creatorData = await crewStore.checkScheduleCreator(props.eventId)
+        isCreator.value = creatorData.data.isCreator
+    } catch (e) {
+        console.error('Failed to check creator status', e)
+        isCreator.value = false
     }
+
+      if (event.value) {
+        // Debugging: Log the first member to see structure
+        if (event.value.members && event.value.members.length > 0) {
+            console.log('[DEBUG] First member object:', event.value.members[0])
+        }
+        participants.value = (event.value.members || []).map(m => ({
+          id: m.userId,
+          // Try to find the schedule member ID using common names
+          scheduleMemberId: m.scheduleMemberId || m.id || m.scheduleId, 
+          name: m.nickname,
+          status: m.status ? m.status.toLowerCase() : 'pending',
+          image: m.profileImage
+        }))
+        
+        // TODO: Replace 999 with actual user ID
+        isParticipating.value = participants.value.some(p => p.id === 999) 
+      }
   } catch (error) {
     console.error('Failed to fetch event details', error)
   } finally {
@@ -72,94 +81,62 @@ const close = () => {
 
 const handleJoin = async () => {
   try {
-    // Mock API call to join
-    // await crewStore.joinEvent(crewId, props.eventId)
-    
-    // Optimistic update
-    participants.value.push({
-      id: 999,
-      name: '나(Me)',
-      status: 'pending',
-      image: 'https://picsum.photos/seed/me/50/50'
-    })
-    isParticipating.value = true
-    if (event.value) event.value.participants++
-    
+    await crewStore.joinEvent(crewId, props.eventId)
+    await fetchEventDetails()
     alert('참여 신청이 완료되었습니다.')
   } catch (error) {
-    alert('참여 신청에 실패했습니다.')
+    if (error.response && error.response.status === 409) {
+         alert('이미 참여한 일정입니다.')
+    } else if (error.response && error.response.data && error.response.data.message) {
+         alert(error.response.data.message)
+    } else {
+         alert('참여 신청에 실패했습니다.')
+    }
   }
 }
 
 const handleCancelJoin = async () => {
   if (!confirm('참여를 취소하시겠습니까?')) return
-  
   try {
-    // Mock API call to cancel join
-    // await crewStore.cancelJoinEvent(crewId, props.eventId)
-    
-    // Optimistic update
+    await crewStore.cancelJoinEvent(crewId, props.eventId)
     participants.value = participants.value.filter(p => p.id !== 999)
     isParticipating.value = false
     if (event.value) event.value.participants--
-    
     alert('참여가 취소되었습니다.')
   } catch (error) {
     alert('참여 취소에 실패했습니다.')
   }
 }
 
-const updateParticipantStatus = async (participantId, status) => {
-  try {
-    // Mock API call
-    // await crewStore.updateEventParticipantStatus(crewId, props.eventId, participantId, status)
-    
-    const p = participants.value.find(p => p.id === participantId)
-    if (p) p.status = status
-  } catch (error) {
-    console.error('Failed to update status', error)
-  }
+const handleStatusChange = async (scheduleMemberId, newStatus) => {
+    try {
+        // Send uppercase status to backend
+        await crewStore.updateEventParticipantStatus(crewId, props.eventId, scheduleMemberId, newStatus.toUpperCase())
+        alert('상태가 변경되었습니다.')
+    } catch (e) {
+        alert('상태 변경에 실패했습니다.')
+        // Revert change in UI if needed, but for now we let it be or refresh
+        fetchEventDetails()
+    }
 }
 
-const confirmEvent = async () => {
-  if (!confirm('일정을 확정하시겠습니까? 확정 후에는 추가 참여가 불가능합니다.')) return
-  
-  try {
-    // Mock API call
-    // await crewStore.confirmEvent(crewId, props.eventId)
-    
-    if (event.value) event.value.status = 'confirmed'
-    
-    // Update all pending to attended or no-show based on logic (or just mark event as confirmed)
-    // For this requirement: "scheduleMember의 상태가 Attended로 변경되고"
-    // We might want to bulk update or just mark the event. 
-    // Let's assume we mark the event as confirmed and maybe update statuses.
-    
-    alert('일정이 확정되었습니다.')
-  } catch (error) {
-    alert('일정 확정에 실패했습니다.')
-  }
-}
-
-const completeEvent = async () => {
-  if (!confirm('일정을 종료하시겠습니까? 참여한 멤버들의 거리가 업데이트됩니다.')) return
-  
-  try {
-    // Mock API call
-    // await crewStore.completeEvent(crewId, props.eventId)
-    
-    if (event.value) event.value.status = 'completed'
-    alert('일정이 종료되었습니다. 마일리지가 적립되었습니다.')
-  } catch (error) {
-    alert('일정 종료 처리에 실패했습니다.')
+const getEventTypeInfo = (type) => {
+  const safeType = type ? type.toUpperCase() : 'REGULAR'
+  switch(safeType) {
+    case 'REGULAR': return { label: '정기', type: 'success' }
+    case 'EVENT': return { label: '이벤트', type: 'warning' }
+    case 'LIGHTNING': return { label: '번개', type: 'primary' }
+    default: return { label: '정기', type: 'success' }
   }
 }
 
 const getStatusBadge = (status) => {
   const map = {
     pending: { label: '대기', type: 'info' },
+    confirmed: { label: '확정', type: 'primary' },
     attended: { label: '참석', type: 'success' },
-    noshow: { label: '불참', type: 'danger' }
+    absent: { label: '불참', type: 'danger' },
+    noshow: { label: '불참(No-Show)', type: 'danger' }
   }
   return map[status] || { label: status, type: '' }
 }
@@ -180,8 +157,8 @@ const getStatusBadge = (status) => {
     <div v-else-if="event" class="detail-container">
       <div class="event-header-section">
         <div class="header-top">
-          <el-tag :type="event.type === 'regular' ? 'success' : (event.type === 'special' ? 'warning' : 'primary')">
-            {{ event.type === 'regular' ? '정기' : (event.type === 'special' ? '이벤트' : '번개') }}
+          <el-tag :type="getEventTypeInfo(event.type).type">
+            {{ getEventTypeInfo(event.type).label }}
           </el-tag>
           <span class="event-status" v-if="event.status === 'confirmed'">확정됨</span>
           <span class="event-status completed" v-else-if="event.status === 'completed'">종료됨</span>
@@ -238,31 +215,28 @@ const getStatusBadge = (status) => {
               <span class="p-name">{{ p.name }}</span>
             </div>
             <div class="p-status">
-              <el-tag :type="getStatusBadge(p.status).type" size="small">
-                {{ getStatusBadge(p.status).label }}
-              </el-tag>
-              
-              <!-- Manager Controls -->
-              <div v-if="isManager && event.status !== 'completed'" class="manager-controls">
-                <el-button 
-                  v-if="p.status !== 'attended'" 
-                  circle 
+              <template v-if="isCreator">
+                <el-select 
+                  v-model="p.status" 
                   size="small" 
-                  type="success" 
-                  :icon="Check"
-                  @click="updateParticipantStatus(p.id, 'attended')"
-                  title="참석 처리"
-                />
-                <el-button 
-                  v-if="p.status !== 'noshow'" 
-                  circle 
-                  size="small" 
-                  type="danger" 
-                  :icon="Close"
-                  @click="updateParticipantStatus(p.id, 'noshow')"
-                  title="불참 처리"
-                />
-              </div>
+                  @change="(val) => handleStatusChange(p.scheduleMemberId, val)"
+                  style="width: 110px"
+                >
+                  <el-option-group label="신청 상태">
+                    <el-option label="대기" value="pending" />
+                    <el-option label="확정" value="confirmed" />
+                  </el-option-group>
+                  <el-option-group label="참여 결과">
+                    <el-option label="참석" value="attended" />
+                    <el-option label="불참" value="absent" />
+                  </el-option-group>
+                </el-select>
+              </template>
+              <template v-else>
+                <el-tag :type="getStatusBadge(p.status).type" size="small">
+                  {{ getStatusBadge(p.status).label }}
+                </el-tag>
+              </template>
             </div>
           </div>
         </div>
@@ -271,22 +245,6 @@ const getStatusBadge = (status) => {
 
     <template #footer>
       <div class="dialog-footer">
-        <div class="left-actions" v-if="isManager">
-          <el-button 
-            v-if="event?.status !== 'confirmed' && event?.status !== 'completed'" 
-            type="success" 
-            @click="confirmEvent"
-          >
-            일정 확정
-          </el-button>
-          <el-button 
-            v-if="event?.status === 'confirmed'" 
-            type="warning" 
-            @click="completeEvent"
-          >
-            일정 종료
-          </el-button>
-        </div>
         <el-button @click="close">닫기</el-button>
       </div>
     </template>
@@ -404,19 +362,9 @@ const getStatusBadge = (status) => {
   gap: 12px;
 }
 
-.manager-controls {
-  display: flex;
-  gap: 4px;
-}
-
 .dialog-footer {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  justify-content: flex-end;
 }
 
-.left-actions {
-  display: flex;
-  gap: 8px;
-}
 </style>
