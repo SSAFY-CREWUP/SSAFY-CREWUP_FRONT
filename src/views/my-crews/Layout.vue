@@ -33,17 +33,16 @@ const menuItems = [
   { name: '홈', path: 'home', icon: HomeFilled },
   { name: '게시판', path: 'board', icon: List },
   { name: '일정', path: 'schedule', icon: Calendar },
-  { name: '코스', path: 'courses', icon: MapLocation },
   { name: '투표', path: 'votes', icon: TrendCharts },
   { name: '멤버', path: 'members', icon: UserFilled }
 ]
 
 const isActive = (path) => {
-  return route.path.includes(`/crews/${crewId}/${path}`)
+  return route.path.includes(`/crews/${route.params.id}/${path}`)
 }
 
 const navigateTo = (path) => {
-  router.push(`/crews/${crewId}/${path}`)
+  router.push(`/crews/${route.params.id}/${path}`)
   isMobileDrawerOpen.value = false // Close drawer on navigation
 }
 </script>

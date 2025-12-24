@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useCrewStore } from '../../stores/crew'
 import dayjs from 'dayjs'
@@ -16,22 +16,99 @@ dayjs.locale('ko')
 const route = useRoute()
 const router = useRouter()
 const crewStore = useCrewStore()
-const crewId = route.params.id
 
-const dashboardData = ref(null)
+const dashboardData = ref({
+  notices: [],
+  upcomingEvents: [],
+  recentPosts: [],
+  mvp: []
+})
 const loading = ref(true)
 
-
-onMounted(async () => {
+const loadData = async (id) => {
+  if (!id) return
+  loading.value = true
   try {
-    dashboardData.value = await crewStore.fetchDashboardData(crewId)
+    // 1. Crew Detail & Members
+    await Promise.all([
+      crewStore.fetchCrew(id),
+      crewStore.fetchMembers(id)
+    ])
+    
+    const [eventsRes, noticesRes, recentPostsRes] = await Promise.all([
+        crewStore.fetchEvents(id).catch(e => { console.error(e); return [] }),
+        crewStore.fetchPosts(id, { category: '공지', size: 3 }).catch(e => { console.error(e); return { data: [] } }),
+        crewStore.fetchPosts(id, { category: '전체', size: 5 }).catch(e => { console.error(e); return { data: [] } })
+    ])
+    
+    // Events
+    if (eventsRes) {
+        dashboardData.value.upcomingEvents = eventsRes
+    }
+
+    // Notices
+    if (noticesRes && noticesRes.data) {
+        dashboardData.value.notices = noticesRes.data.map(post => ({
+            id: post.id,
+            title: post.title,
+            date: post.date,
+            isPinned: false
+        }))
+    }
+
+    // Recent Posts
+    if (recentPostsRes && recentPostsRes.data) {
+        dashboardData.value.recentPosts = recentPostsRes.data.map(post => ({
+            id: post.id,
+            title: post.title,
+            comments: post.comments,
+            author: post.author
+        }))
+    }
 
   } catch (error) {
     console.error('Failed to load dashboard data', error)
   } finally {
     loading.value = false
   }
+}
+
+onMounted(() => {
+  loadData(route.params.id)
 })
+
+watch(() => route.params.id, (newId, oldId) => {
+    if (newId && newId !== oldId) {
+        loadData(newId)
+    }
+})
+
+const formatAgeGroup = (ageGroup) => {
+  if (!ageGroup) return '-'
+  if (ageGroup === '전연령') return '전연령'
+  
+  const map = {
+    '1020': '10대~20대',
+    '2030': '20대~30대',
+    '3040': '30대~40대',
+    '4050': '40대~50대',
+    '5060': '50대~60대',
+    'TEENS': '10대',
+    'TWENTIES': '20대',
+    'THIRTIES': '30대',
+    'FORTIES': '40대',
+    'FIFTIES': '50대',
+    'SIXTIES': '60대',
+    'SEVENTIES': '70대'
+  }
+  
+  if (map[ageGroup]) return map[ageGroup]
+  
+  // If it's a simple number string like "30", return "30대"
+  if (!isNaN(ageGroup)) return `${ageGroup}대`
+  
+  return ageGroup
+}
 
 
 
@@ -56,8 +133,19 @@ const filteredUpcomingEvents = computed(() => {
       const dateB = dayjs(`${b.date} ${b.time}`)
       return dateA.diff(dateB)
     })
-    .slice(0, 2)
+    .slice(0, 3)
 })
+const formatPace = (pace) => {
+  if (!pace) return '-'
+  if (typeof pace === 'string' && pace.includes(':')) return pace
+  
+  const numPace = Number(pace)
+  if (isNaN(numPace)) return pace
+  
+  const minutes = Math.floor(numPace)
+  const seconds = Math.round((numPace - minutes) * 60)
+  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
+}
 </script>
 
 <template>
@@ -73,13 +161,16 @@ const filteredUpcomingEvents = computed(() => {
               더보기 <el-icon><ArrowRight /></el-icon>
             </button>
           </div>
-          <ul class="notice-list">
-            <li v-for="notice in dashboardData.notices.slice(0, 3)" :key="notice.id" :class="{ pinned: notice.isPinned }">
+          <ul class="notice-list" v-if="dashboardData.notices && dashboardData.notices.length > 0">
+            <li v-for="notice in dashboardData.notices" :key="notice.id" :class="{ pinned: notice.isPinned }">
               <span class="notice-icon" v-if="notice.isPinned">📌</span>
               <span class="notice-title">{{ notice.title }}</span>
               <span class="notice-date">{{ dayjs(notice.date).format('MM.DD') }}</span>
             </li>
           </ul>
+          <div v-else class="empty-widget">
+            등록된 공지사항이 없습니다.
+          </div>
         </div>
 
         <!-- 3. Upcoming Events -->
@@ -87,7 +178,7 @@ const filteredUpcomingEvents = computed(() => {
           <div class="widget-header">
             <h3>📅 다가오는 일정</h3>
           </div>
-          <el-timeline>
+          <el-timeline v-if="filteredUpcomingEvents.length > 0">
             <el-timeline-item
               v-for="event in filteredUpcomingEvents"
               :key="event.id"
@@ -107,6 +198,9 @@ const filteredUpcomingEvents = computed(() => {
               </div>
             </el-timeline-item>
           </el-timeline>
+          <div v-else class="empty-widget">
+             예정된 일정이 없습니다.
+          </div>
         </div>
       </div>
 
@@ -121,7 +215,7 @@ const filteredUpcomingEvents = computed(() => {
           <div class="crew-info-grid">
             <div class="info-item">
               <span class="info-label">평균 페이스</span>
-              <span class="info-value">{{ crewStore.currentCrew?.pace || '-' }}</span>
+              <span class="info-value">{{ formatPace(crewStore.currentCrew?.pace) }}</span>
             </div>
             <div class="info-item">
               <span class="info-label">활동 지역</span>
@@ -129,15 +223,11 @@ const filteredUpcomingEvents = computed(() => {
             </div>
             <div class="info-item">
               <span class="info-label">인원 수</span>
-              <span class="info-value">{{ crewStore.currentCrew?.members || 0 }}명</span>
+              <span class="info-value">{{ crewStore.members ? crewStore.members.length : 0 }}명</span>
             </div>
             <div class="info-item">
               <span class="info-label">주 연령대</span>
-              <span class="info-value">{{ crewStore.currentCrew?.memberInfo || '-' }}</span>
-            </div>
-            <div class="info-item full-width">
-              <span class="info-label">총 거리</span>
-              <span class="info-value highlight">준비중</span>
+              <span class="info-value">{{ formatAgeGroup(crewStore.currentCrew?.ageRange) }}</span>
             </div>
           </div>
         </div>
@@ -146,9 +236,9 @@ const filteredUpcomingEvents = computed(() => {
         <div class="widget-card posts-widget">
           <div class="widget-header">
             <h3>📝 최근 게시글</h3>
-            <button class="btn-more">더보기</button>
+            <button class="btn-more" @click="router.push({ name: 'crew-board' })">더보기</button>
           </div>
-          <ul class="post-list">
+          <ul class="post-list" v-if="dashboardData.recentPosts && dashboardData.recentPosts.length > 0">
             <li v-for="post in dashboardData.recentPosts" :key="post.id">
               <div class="post-main">
                 <span class="post-title">{{ post.title }}</span>
@@ -157,19 +247,8 @@ const filteredUpcomingEvents = computed(() => {
               <span class="post-author">{{ post.author }}</span>
             </li>
           </ul>
-        </div>
-
-        <!-- 6. MVP -->
-        <div class="widget-card mvp-widget">
-          <div class="widget-header">
-            <h3>🏆 이번 달 MVP</h3>
-          </div>
-          <div class="mvp-grid">
-            <div v-for="mvp in dashboardData.mvp" :key="mvp.title" class="mvp-card">
-              <div class="mvp-badge">{{ mvp.title }}</div>
-              <img :src="mvp.image" class="mvp-img" />
-              <span class="mvp-name">{{ mvp.name }}</span>
-            </div>
+          <div v-else class="empty-widget">
+            등록된 게시글이 없습니다.
           </div>
         </div>
       </div>
@@ -498,5 +577,14 @@ const filteredUpcomingEvents = computed(() => {
 
 .info-value.highlight {
   color: var(--color-primary);
+}
+
+.empty-widget {
+  text-align: center;
+  padding: 30px;
+  color: var(--color-text-tertiary);
+  font-size: 0.9rem;
+  background: #f9fafb;
+  border-radius: 8px;
 }
 </style>

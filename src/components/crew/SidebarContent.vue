@@ -48,36 +48,9 @@ const props = defineProps({
           <span>가입 신청 관리</span>
         </div>
       </div>
-
-      <!-- Leader Section (Course) -->
-      <div v-if="userStats.role === '크루장'" class="nav-section">
-        <div class="nav-section-title">코스 관리</div>
-        <div 
-          class="nav-item"
-          :class="{ active: isActive('courses/create') }"
-          @click="navigateTo('courses/create')"
-        >
-          <el-icon :size="20"><MapLocation /></el-icon>
-          <span>코스 생성</span>
-        </div>
-      </div>
     </nav>
 
-    <!-- User Stats -->
-    <div class="user-stats-card">
-      <div class="stats-header">
-        <span class="stats-title">내 활동</span>
-        <el-icon><UserFilled /></el-icon>
-      </div>
-      <div class="stats-row">
-        <span>출석</span>
-        <span class="stats-value">{{ userStats.attendance }}</span>
-      </div>
-      <div class="stats-row">
-        <span>이번 달</span>
-        <span class="stats-value">{{ userStats.distance }}</span>
-      </div>
-    </div>
+
 
     <!-- Notifications Removed -->
   </div>

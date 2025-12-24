@@ -12,14 +12,13 @@ const router = useRouter()
 const form = reactive({
   name: '',
   region: '',
-  // pace removed as requested
   activityTime: '',
   ageRange: '', 
   genderLimit: '모두',
   description: '',
   image: null,
   imageFile: null,
-  mainActivities: ['', '', '', ''] // Array of 4 strings
+  mainActivities: ['', '', '', ''] 
 })
 
 const placeholders = [
@@ -30,7 +29,6 @@ const placeholders = [
 ]
 
 const loading = ref(false)
-
 
 const handleImageChange = (file) => {
   form.image = URL.createObjectURL(file.raw)

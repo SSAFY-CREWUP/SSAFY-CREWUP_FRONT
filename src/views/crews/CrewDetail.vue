@@ -63,6 +63,16 @@ onMounted(async () => {
 const goBack = () => {
   router.back()
 }
+
+const formatPace = (pace) => {
+  if (!pace) return '00:00'
+  const paceNum = Number(pace)
+  if (isNaN(paceNum)) return pace
+  
+  const minutes = Math.floor(paceNum)
+  const seconds = Math.round((paceNum - minutes) * 60)
+  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
+}
 </script>
 
 <template>
@@ -122,7 +132,7 @@ const goBack = () => {
                         </div>
                          <div class="info-content">
                             <span class="label">평균 페이스</span>
-                            <span class="value">{{ crewStore.currentCrew.pace }}</span>
+                            <span class="value">{{ formatPace(crewStore.currentCrew.pace) }}</span>
                         </div>
                     </div>
                      <!-- Time -->
