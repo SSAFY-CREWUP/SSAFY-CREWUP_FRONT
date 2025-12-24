@@ -2,27 +2,25 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useCrewStore } from '../../stores/crew'
-import { Plus, TrendCharts, Timer, UserFilled, Check } from '@element-plus/icons-vue'
+import { Plus, TrendCharts, Timer, UserFilled, Check, Lock } from '@element-plus/icons-vue'
 import CreateVoteModal from '../../components/crew/CreateVoteModal.vue'
 
 const route = useRoute()
 const crewStore = useCrewStore()
 const crewId = route.params.id
 
-const currentUserId = 999 // Mock current user ID
-
-const getMyVote = (vote) => {
-  if (!vote.participants) return null
-  return vote.participants.find(p => p.id === currentUserId)
-}
-const currentUserRole = ref('leader') // Mock role: 'leader', 'manager', 'member'
+const currentUserId = 999 
+const currentUserRole = ref('leader')
 
 const votes = ref([])
 const loading = ref(false)
 const activeTab = ref('progress')
 const showResultModal = ref(false)
 const showCreateModal = ref(false)
+const showVoteModal = ref(false)
+
 const selectedVote = ref(null)
+const selectedOptionIds = ref([])
 const isManageMode = ref(false)
 
 const fetchVotes = async () => {
@@ -40,11 +38,23 @@ onMounted(() => {
 })
 
 const filteredVotes = computed(() => {
-  if (activeTab.value === 'manage') return votes.value // Show all votes in manage tab
+  if (activeTab.value === 'manage') return votes.value // Show all
+  // Should "My Votes" be a tab? The user asked for "My Votes" tab. 
+  // Let's assume 'manage' is for admins, maybe we need a 'my' tab? 
+  // For now stick to progress/closed/manage.
   return votes.value.filter(v => v.status === activeTab.value)
 })
 
+const getMyVoteStatus = (vote) => {
+    // Check if user is in main participants list
+    const p = vote.participants?.find(p => p.id === currentUserId)
+    if (p) return p.status
+    return null
+}
 
+const hasVoted = (vote) => {
+    return !!getMyVoteStatus(vote)
+}
 
 const getStatusText = (status) => {
   return status === 'progress' ? '진행중' : '종료됨'
@@ -54,24 +64,41 @@ const getStatusColor = (status) => {
   return status === 'progress' ? '#4CAF50' : '#9E9E9E'
 }
 
-const handleVote = async (vote) => {
-  if (!confirm('투표하시겠습니까?')) return
-  try {
-    await crewStore.castVote(crewId, vote.id)
-    alert('투표가 완료되었습니다.')
-    fetchVotes()
-  } catch (error) {
-    alert('투표에 실패했습니다.')
-  }
+// Open Voting Modal
+const openVoteModal = (vote) => {
+    selectedVote.value = vote
+    selectedOptionIds.value = []
+    showVoteModal.value = true
 }
 
+const submitVote = async () => {
+    if (selectedOptionIds.value.length === 0) {
+        alert('항목을 선택해주세요.')
+        return
+    }
+    
+    // If not allowing multiple, ensure only 1 (UI handles this but safety check)
+    if (!selectedVote.value.allowMultiple && Array.isArray(selectedOptionIds.value) && selectedOptionIds.value.length > 1) {
+         // Should not happen with radio
+    }
+    
+    // If using el-radio-group, selectedOptionIds might be a single value, normalize to array
+    let finalIds = Array.isArray(selectedOptionIds.value) ? selectedOptionIds.value : [selectedOptionIds.value]
+
+    try {
+        await crewStore.castVote(crewId, selectedVote.value.id, finalIds)
+        alert('투표가 완료되었습니다.')
+        showVoteModal.value = false
+        fetchVotes()
+    } catch (error) {
+        alert('투표에 실패했습니다.')
+    }
+}
+
+// Result / Manage
 const openResult = (vote, manageMode = false) => {
-  selectedVote.value = JSON.parse(JSON.stringify(vote)) // Deep copy
+  selectedVote.value = JSON.parse(JSON.stringify(vote))
   isManageMode.value = manageMode
-  // Sort participants by votedAt
-  if (selectedVote.value.participants) {
-    selectedVote.value.participants.sort((a, b) => new Date(a.votedAt) - new Date(b.votedAt))
-  }
   showResultModal.value = true
 }
 
@@ -80,12 +107,7 @@ const handleConfirm = async (participant) => {
   try {
     await crewStore.confirmParticipant(crewId, selectedVote.value.id, participant.id)
     participant.status = 'approved'
-    // Update local state to reflect change immediately
-    const originalVote = votes.value.find(v => v.id === selectedVote.value.id)
-    if (originalVote) {
-      const p = originalVote.participants.find(p => p.id === participant.id)
-      if (p) p.status = 'approved'
-    }
+    fetchVotes() // Refresh background
   } catch (error) {
     alert('확정에 실패했습니다.')
   }
@@ -95,10 +117,32 @@ const handleCreateVote = async (voteData) => {
   try {
     await crewStore.createVote(crewId, voteData)
     alert('투표가 생성되었습니다.')
-    fetchVotes() // Refresh list
+    fetchVotes()
   } catch (error) {
     alert('투표 생성에 실패했습니다.')
   }
+}
+
+const handleEndVote = async (vote) => {
+    if (!confirm('투표를 종료하시겠습니까?')) return
+    try {
+        await crewStore.updateVoteStatus(crewId, vote.id, 'closed')
+        alert('투표가 종료되었습니다.')
+        fetchVotes()
+    } catch (error) {
+        alert('투표 종료에 실패했습니다.')
+    }
+}
+
+const handleDeleteVote = async (vote) => {
+    if (!confirm('투표를 삭제하시겠습니까? 복구할 수 없습니다.')) return
+    try {
+        await crewStore.deleteVote(crewId, vote.id)
+        alert('투표가 삭제되었습니다.')
+        fetchVotes()
+    } catch (error) {
+        alert('투표 삭제에 실패했습니다.')
+    }
 }
 </script>
 
@@ -106,8 +150,9 @@ const handleCreateVote = async (voteData) => {
   <div class="votes-view">
     <div class="page-header">
       <h2>투표</h2>
+      <!-- Only show create button in Manage tab or if leader/manager -->
       <button 
-        v-if="activeTab === 'manage'"
+        v-if="['leader', 'manager'].includes(currentUserRole)"
         class="btn-create" 
         @click="showCreateModal = true"
       >
@@ -133,9 +178,16 @@ const handleCreateVote = async (voteData) => {
       </div>
 
       <div v-else v-for="vote in filteredVotes" :key="vote.id" class="vote-card">
-        <div class="vote-status" :style="{ color: getStatusColor(vote.status) }">
-          ● {{ getStatusText(vote.status) }}
+        <div class="card-header">
+             <div class="vote-status" :style="{ color: getStatusColor(vote.status) }">
+                ● {{ getStatusText(vote.status) }}
+            </div>
+            <div class="vote-flags">
+                <el-tag v-if="vote.isAnonymous" size="small" type="info" effect="plain"><el-icon><Lock /></el-icon> 익명</el-tag>
+                <el-tag v-if="vote.allowMultiple" size="small" type="success" effect="plain">중복가능</el-tag>
+            </div>
         </div>
+       
         <h3 class="vote-title">{{ vote.title }}</h3>
         
         <div class="vote-meta">
@@ -145,43 +197,57 @@ const handleCreateVote = async (voteData) => {
           </span>
           <span class="meta-item">
             <el-icon><UserFilled /></el-icon>
-            제한인원 {{ vote.maxParticipants }}명
+            {{ vote.participants?.length || 0 }} / {{ vote.maxParticipants }}명 참여
           </span>
         </div>
 
         <div class="vote-actions">
-          <!-- Management Tab Actions -->
           <template v-if="activeTab === 'manage'">
-            <button class="btn-manage" @click="openResult(vote, true)">
-              관리하기
+            <button class="btn-manage result" @click="openResult(vote, true)">
+              결과확인
+            </button>
+            <button 
+                v-if="vote.status === 'progress'" 
+                class="btn-manage end" 
+                @click="handleEndVote(vote)"
+            >
+                투표종료
+            </button>
+            <button class="btn-manage delete" @click="handleDeleteVote(vote)">
+                삭제
             </button>
           </template>
 
-          <!-- User Tab Actions -->
           <template v-else>
+            <!-- Progress Tab -->
             <template v-if="vote.status === 'progress'">
-              <button 
-                v-if="!getMyVote(vote)"
-                class="btn-vote" 
-                @click="handleVote(vote)"
-              >
-                투표하기
-              </button>
-              <button 
-                v-else-if="getMyVote(vote).status === 'pending'"
-                class="btn-voted" 
-                disabled
-              >
-                투표완료
-              </button>
-              <button 
-                v-else
-                class="btn-approved" 
-                disabled
-              >
-                <el-icon><Check /></el-icon> 참여확정
-              </button>
+                <!-- Not Voted yet -->
+                <button 
+                    v-if="!hasVoted(vote)"
+                    class="btn-vote" 
+                    @click="openVoteModal(vote)"
+                >
+                    투표하기
+                </button>
+                <!-- Voted -->
+                <template v-else>
+                    <button 
+                        v-if="getMyVoteStatus(vote) === 'pending'"
+                        class="btn-voted" 
+                        @click="openResult(vote, false)"
+                    >
+                        투표완료 (결과보기)
+                    </button>
+                    <button 
+                        v-else
+                        class="btn-approved" 
+                         @click="openResult(vote, false)"
+                    >
+                        <el-icon><Check /></el-icon> 참여확정 (결과보기)
+                    </button>
+                </template>
             </template>
+            <!-- Closed Tab -->
             <button 
               v-else
               class="btn-result" 
@@ -194,54 +260,97 @@ const handleCreateVote = async (voteData) => {
       </div>
     </div>
 
+    <!-- Vote Modal -->
+    <el-dialog
+        v-model="showVoteModal"
+        title="투표하기"
+        width="500px"
+        align-center
+    >
+        <div v-if="selectedVote" class="vote-modal-content">
+            <h3 class="modal-vote-title">{{ selectedVote.title }}</h3>
+            <p class="modal-vote-desc">
+                {{ selectedVote.allowMultiple ? '여러 항목을 선택할 수 있습니다.' : '하나의 항목을 선택해주세요.' }}
+            </p>
+
+            <div class="options-list">
+                <!-- Checkbox for Multiple -->
+                <el-checkbox-group v-if="selectedVote.allowMultiple" v-model="selectedOptionIds" class="vertical-group">
+                    <el-checkbox 
+                        v-for="opt in selectedVote.options" 
+                        :key="opt.id" 
+                        :label="opt.id" 
+                        border
+                    >
+                        {{ opt.text }}
+                    </el-checkbox>
+                </el-checkbox-group>
+
+                <!-- Radio for Single -->
+                <el-radio-group v-else v-model="selectedOptionIds" class="vertical-group">
+                    <el-radio 
+                        v-for="opt in selectedVote.options" 
+                        :key="opt.id" 
+                        :label="opt.id" 
+                        border
+                    >
+                        {{ opt.text }}
+                    </el-radio>
+                </el-radio-group>
+            </div>
+        </div>
+        <template #footer>
+            <button class="btn-submit" @click="submitVote">투표하기</button>
+        </template>
+    </el-dialog>
+
     <!-- Result Modal -->
     <el-dialog
       v-model="showResultModal"
       :title="isManageMode ? '투표 관리' : '투표 결과'"
       width="600px"
+      align-center
     >
       <div v-if="selectedVote" class="result-content">
         <div class="result-header">
-          <h3>{{ selectedVote.title }}</h3>
-          <div class="result-meta">
-            <span>마감일: {{ selectedVote.endDate }}</span>
-            <span>제한인원: {{ selectedVote.maxParticipants }}명</span>
-            <span>투표인원: {{ selectedVote.participants?.length || 0 }}명</span>
-          </div>
+           <h3 class="modal-vote-title">{{ selectedVote.title }}</h3>
+            <div class="result-meta-tags">
+                <el-tag v-if="selectedVote.isAnonymous" type="info">익명 투표</el-tag>
+                <span class="total-count">총 {{ selectedVote.participants?.length || 0 }}명 참여</span>
+            </div>
         </div>
 
-        <div class="participants-list">
-          <h4>투표 참여자 (선착순)</h4>
-          <div v-if="!selectedVote.participants || selectedVote.participants.length === 0" class="no-participants">
-            참여자가 없습니다.
-          </div>
-          <div v-else class="participant-item" v-for="(p, index) in selectedVote.participants" :key="p.id">
-            <div class="participant-info">
-              <span class="rank">{{ index + 1 }}</span>
-              <span class="name">{{ p.name }}</span>
-              <span class="time">{{ p.votedAt }}</span>
-            </div>
-            <div class="participant-action">
-              <span v-if="p.status === 'approved'" class="status-approved">
-                <el-icon><Check /></el-icon> 확정됨
-              </span>
-              <button 
-                v-else-if="isManageMode"
-                class="btn-confirm" 
-                @click="handleConfirm(p)"
-              >
-                확정
-              </button>
-              <span v-else class="status-pending">
-                대기중
-              </span>
-            </div>
-          </div>
+        <div class="result-options-list">
+             <div v-for="opt in selectedVote.options" :key="opt.id" class="result-option-item">
+                 <div class="option-header">
+                     <span class="option-text">{{ opt.text }}</span>
+                     <span class="option-count">{{ opt.voters?.length || 0 }}명</span>
+                 </div>
+                 
+                 <!-- Voter List (Hide details if anonymous and NOT manager, but usually anonymous hides for everyone except maybe admin, let's follow standard: anonymous means strictly anonymous names) -->
+                <!-- Assuming Manager CAN see anonymous? Or no? "무기명 투표가 아니라면..." means if NOT anonymous, show user info. So if anonymous, hide. -->
+                 <div v-if="!selectedVote.isAnonymous" class="voter-avatars">
+                     <div v-for="voter in opt.voters" :key="voter.id" class="voter-chip">
+                         <img :src="voter.image" class="voter-img" />
+                         <span class="voter-name">{{ voter.name }}</span>
+                         <span class="voter-time">{{ voter.votedAt.split(' ')[1] }}</span>
+                     </div>
+                 </div>
+                 <div v-else class="anonymous-placeholder">
+                     비공개 투표입니다.
+                 </div>
+             </div>
         </div>
+
+        <!-- Management Actions on Participants (Only if NOT anonymous, or logic to manage generic participants) -->
+        <!-- "Confirm" logic implies we know who they are. If anonymous, confirm might be tricky or based on generic ID? -->
+        <!-- Assuming Confirm matches users to slots. If anonymous, maybe we just confirm count? -->
+        <!-- User request: "투표한 항목마다 투표한 인원의 ... 리스트느낌으로 표시" if NOT anonymous. -->
+        <!-- "투표 상세보기 - 현재 투표 상황 볼 수 있도록 -> 투표한 인원만 볼 수 있게" (This logic is handled by button visibility) -->
+        
       </div>
     </el-dialog>
 
-    <!-- Create Vote Modal -->
     <CreateVoteModal
       v-model="showCreateModal"
       @submit="handleCreateVote"
@@ -253,6 +362,7 @@ const handleCreateVote = async (voteData) => {
 .votes-view {
   max-width: 800px;
   margin: 0 auto;
+  padding-bottom: 40px;
 }
 
 .page-header {
@@ -282,10 +392,6 @@ const handleCreateVote = async (voteData) => {
   transition: background 0.2s;
 }
 
-.btn-create:hover {
-  background: #45a049;
-}
-
 .vote-list {
   display: flex;
   flex-direction: column;
@@ -296,24 +402,36 @@ const handleCreateVote = async (voteData) => {
 .vote-card {
   background: white;
   border: 1px solid var(--color-border-light);
-  border-radius: 12px;
+  border-radius: 16px;
   padding: 24px;
   transition: transform 0.2s;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.02);
 }
 
 .vote-card:hover {
   transform: translateY(-2px);
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
 }
 
 .vote-status {
   font-size: 0.9rem;
-  font-weight: 600;
-  margin-bottom: 8px;
+  font-weight: 700;
+}
+
+.vote-flags {
+    display: flex;
+    gap: 4px;
 }
 
 .vote-title {
-  font-size: 1.2rem;
+  font-size: 1.25rem;
   font-weight: 700;
   margin: 0 0 16px 0;
   color: var(--color-text-primary);
@@ -324,7 +442,7 @@ const handleCreateVote = async (voteData) => {
   gap: 16px;
   color: var(--color-text-secondary);
   font-size: 0.9rem;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
 }
 
 .meta-item {
@@ -333,14 +451,20 @@ const handleCreateVote = async (voteData) => {
   gap: 6px;
 }
 
-.btn-vote, .btn-result {
+.vote-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.btn-vote, .btn-result, .btn-voted, .btn-approved, .btn-manage {
   width: 100%;
-  padding: 12px;
+  padding: 14px;
   border: none;
-  border-radius: 8px;
+  border-radius: 12px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
+  font-size: 1rem;
 }
 
 .btn-vote {
@@ -352,39 +476,23 @@ const handleCreateVote = async (voteData) => {
   background: #45a049;
 }
 
-.btn-result {
+.btn-result, .btn-voted {
   background: #f5f5f5;
   color: var(--color-text-primary);
 }
 
-.btn-result:hover {
-  background: #e0e0e0;
-}
-
-.btn-voted {
-  width: 100%;
-  padding: 12px;
-  border: none;
-  border-radius: 8px;
-  font-weight: 600;
-  background: #e0e0e0;
-  color: #999;
-  cursor: not-allowed;
-}
-
 .btn-approved {
-  width: 100%;
-  padding: 12px;
-  border: none;
-  border-radius: 8px;
-  font-weight: 600;
-  background: #E8F5E9;
-  color: #4CAF50;
-  cursor: not-allowed;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
+    background: #E8F5E9;
+    color: #4CAF50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.btn-manage {
+  border: 1px solid var(--color-border);
+  background: white;
 }
 
 .empty-state {
@@ -393,119 +501,147 @@ const handleCreateVote = async (voteData) => {
   color: var(--color-text-tertiary);
 }
 
-.empty-state .el-icon {
-  margin-bottom: 10px;
-  color: #e0e0e0;
+/* Modal Styles */
+.vote-modal-content {
+    padding: 10px 0;
 }
 
-/* Result Modal Styles */
+.modal-vote-title {
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+
+.modal-vote-desc {
+    color: #666;
+    margin-bottom: 20px;
+    font-size: 0.9rem;
+}
+
+.vertical-group {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+}
+
+.vertical-group .el-checkbox, .vertical-group .el-radio {
+    margin-right: 0;
+    width: 100%;
+    height: auto;
+    padding: 12px;
+}
+
+.btn-submit {
+    width: 100%;
+    padding: 14px;
+    background: var(--color-primary);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: 700;
+    cursor: pointer;
+    font-size: 1rem;
+}
+
+/* Result Styles */
 .result-header {
-  margin-bottom: 24px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid #eee;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #eee;
 }
 
-.result-header h3 {
-  margin: 0 0 8px 0;
-  font-size: 1.2rem;
+.result-meta-tags {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
-.result-meta {
-  display: flex;
-  gap: 16px;
-  font-size: 0.9rem;
-  color: #666;
+.result-options-list {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
 }
 
-.participants-list h4 {
-  margin: 0 0 16px 0;
-  font-size: 1rem;
-  color: #333;
+.result-option-item {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
 }
 
-.participant-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px;
-  border-bottom: 1px solid #f5f5f5;
+.option-header {
+    display: flex;
+    justify-content: space-between;
+    font-weight: 700;
+    padding: 8px 12px;
+    background: #f9f9f9;
+    border-radius: 8px;
 }
 
-.participant-item:last-child {
-  border-bottom: none;
+.voter-avatars {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 0 8px;
 }
 
-.participant-info {
-  display: flex;
-  align-items: center;
-  gap: 12px;
+.voter-chip {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.9rem;
 }
 
-.rank {
-  font-weight: 700;
-  color: var(--color-primary);
-  width: 20px;
+.voter-img {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
 }
 
-.name {
-  font-weight: 500;
+.voter-name {
+    font-weight: 500;
 }
 
-.time {
-  font-size: 0.85rem;
-  color: #999;
+.voter-time {
+    margin-left: auto;
+    color: #999;
+    font-size: 0.8rem;
 }
 
-.btn-confirm {
-  padding: 6px 12px;
-  background: white;
-  border: 1px solid var(--color-primary);
-  color: var(--color-primary);
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.85rem;
-  transition: all 0.2s;
+.anonymous-placeholder {
+    color: #999;
+    font-size: 0.9rem;
+    padding: 8px;
+    background: #fafafa;
+    border-radius: 6px;
+    text-align: center;
 }
 
-.btn-confirm:hover {
-  background: var(--color-primary);
-  color: white;
+.btn-manage.result {
+    color: var(--color-primary);
+    border-color: var(--color-primary);
 }
 
-.status-approved {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  color: #4CAF50;
-  font-size: 0.85rem;
-  font-weight: 600;
+.btn-manage.result:hover {
+    background: #e3f2fd;
 }
 
-.no-participants {
-  text-align: center;
-  padding: 20px;
-  color: #999;
+.btn-manage.end {
+    color: #FF9800;
+    border-color: #FF9800;
 }
 
-.btn-manage {
-  width: 100%;
-  padding: 12px;
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
-  font-weight: 600;
-  background: white;
-  color: var(--color-text-primary);
-  cursor: pointer;
-  transition: all 0.2s;
+.btn-manage.end:hover {
+    background: #FFF3E0;
 }
 
-.btn-manage:hover {
-  background: #f5f5f5;
-  border-color: #ccc;
+.btn-manage.delete {
+    color: #F44336;
+    border-color: #F44336;
 }
 
-.status-pending {
-  color: #999;
-  font-size: 0.85rem;
+.btn-manage.delete:hover {
+    background: #FFEBEE;
 }
 </style>

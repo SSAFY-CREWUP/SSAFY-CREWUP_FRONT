@@ -43,6 +43,72 @@ const parsePace = (paceStr) => {
     return min + (sec / 60)
 }
 
+// Advanced Vote Mock Data
+const mockVoteData = [
+    {
+        id: 1,
+        title: "12월 정기 회식 장소 투표 (복수 불가, 기명)",
+        endDate: "2024-12-31",
+        maxParticipants: 10,
+        options: [
+            { id: 1, text: "강남 돼지상회", voters: [] },
+            { id: 2, text: "홍대 치킨매니아", voters: [{ id: 999, name: '나(Me)', image: 'https://picsum.photos/seed/me/50/50', votedAt: '2024-12-20 10:00:00.123' }] },
+            { id: 3, text: "이태원 피자", voters: [] }
+        ],
+        allowMultiple: false,
+        isAnonymous: false,
+        status: 'progress',
+        participants: [{ id: 999, name: '나(Me)', status: 'pending', votedAt: '2024-12-20 10:00:00.123' }] 
+    },
+    {
+        id: 2,
+        title: "다음 주 주말 LSD 코스 (복수 가능, 익명)",
+        endDate: "2024-12-25",
+        maxParticipants: 20,
+        options: [
+            { id: 1, text: "한강 공원 코스 (20km)", voters: [] },
+            { id: 2, text: "남산 둘레길 (15km)", voters: [] }
+        ],
+        allowMultiple: true,
+        isAnonymous: true,
+        status: 'progress',
+        participants: []
+    },
+    {
+        id: 3,
+        title: "신년회 날짜 정하기 (복수 가능, 기명)",
+        endDate: "2025-01-05",
+        maxParticipants: 30,
+        options: [
+            { id: 1, text: "1월 10일 (금)", voters: [{ id: 101, name: '김철수', image: 'https://picsum.photos/seed/101/50/50', votedAt: '2024-12-21 14:20:05.500' }] },
+            { id: 2, text: "1월 11일 (토)", voters: [{ id: 102, name: '이영희', image: 'https://picsum.photos/seed/102/50/50', votedAt: '2024-12-21 14:20:05.505' }] },
+            { id: 3, text: "1월 12일 (일)", voters: [] }
+        ],
+        allowMultiple: true,
+        isAnonymous: false,
+        status: 'progress',
+        participants: [
+            { id: 101, name: '김철수', status: 'approved', votedAt: '2024-12-21 14:20:05.500' },
+            { id: 102, name: '이영희', status: 'pending', votedAt: '2024-12-21 14:20:05.505' }
+        ]
+    },
+    {
+        id: 4,
+        title: "팀 유니폼 색상 선정 (복수 불가, 익명)",
+        endDate: "2024-12-28",
+        maxParticipants: 50,
+        options: [
+            { id: 1, text: "네이비", voters: [] },
+            { id: 2, text: "블랙", voters: [] },
+            { id: 3, text: "화이트", voters: [] }
+        ],
+        allowMultiple: false,
+        isAnonymous: true,
+        status: 'progress',
+        participants: []
+    }
+]
+
 export default {
     getCrews(params) {
         return new Promise((resolve) => {
@@ -605,28 +671,46 @@ export default {
         })
     },
 
+
     // Votes API
     getVotes(crewId) {
         return new Promise((resolve) => {
             setTimeout(() => {
-                resolve({ data: [...mockVotes] })
+                resolve({ data: [...mockVoteData] })
             }, 500)
         })
     },
 
-    castVote(crewId, voteId) {
+    castVote(crewId, voteId, selectedOptionIds) {
         return new Promise((resolve) => {
             setTimeout(() => {
-                console.log(`Casting vote for ${voteId} in crew ${crewId}`)
-                const vote = mockVotes.find(v => v.id === voteId)
+                console.log(`Casting vote for ${voteId} in crew ${crewId} with options:`, selectedOptionIds)
+                const vote = mockVoteData.find(v => v.id === voteId)
                 if (vote) {
-                    vote.total += 1
-                    vote.participants.push({
-                        id: 999, // Fixed ID for current user
-                        name: '나(Me)',
-                        votedAt: new Date().toISOString().replace('T', ' ').substring(0, 19),
-                        status: 'pending'
+                    // Update options
+                    vote.options.forEach(opt => {
+                        if (selectedOptionIds.includes(opt.id)) {
+                            // Check if already voted for this option to prevent duplicate (though UI should handle)
+                            if (!opt.voters.find(v => v.id === 999)) {
+                                opt.voters.push({
+                                    id: 999, // Fixed ID for current user
+                                    name: '나(Me)',
+                                    image: 'https://picsum.photos/seed/me/50/50',
+                                    votedAt: new Date().toISOString().replace('T', ' ').replace('Z', '') // Full precision
+                                })
+                            }
+                        }
                     })
+
+                    // Add to main participants list if not exists
+                    if (!vote.participants.find(p => p.id === 999)) {
+                        vote.participants.push({
+                            id: 999,
+                            name: '나(Me)',
+                            status: 'pending',
+                            votedAt: new Date().toISOString().replace('T', ' ').replace('Z', '')
+                        })
+                    }
                 }
                 resolve({ success: true })
             }, 500)
@@ -637,7 +721,7 @@ export default {
         return new Promise((resolve) => {
             setTimeout(() => {
                 console.log(`Confirming participant ${userId} for vote ${voteId} in crew ${crewId}`)
-                const vote = mockVotes.find(v => v.id === voteId)
+                const vote = mockVoteData.find(v => v.id === voteId)
                 if (vote) {
                     const participant = vote.participants.find(p => p.id === userId)
                     if (participant) participant.status = 'approved'
@@ -655,15 +739,50 @@ export default {
                     id: Date.now(),
                     ...voteData,
                     status: 'progress',
-                    total: 0,
-                    participants: []
+                    participants: [],
+                    options: voteData.options.map((opt, text) => ({ // Assuming voteData.options is array of strings
+                         id: Date.now() + Math.random(),
+                         text: opt,
+                         voters: []
+                    }))
                 }
-                mockVotes.unshift(newVote) // Add to beginning
+                // Handle formatting options if they come as strings
+                if (typeof voteData.options[0] === 'string') {
+                     newVote.options = voteData.options.map((text, idx) => ({
+                         id: idx + 1,
+                         text: text,
+                         voters: []
+                     }))
+                }
+                
+                mockVoteData.unshift(newVote) // Add to beginning
                 resolve({
                     success: true,
                     data: newVote
                 })
             }, 500)
+        })
+    },
+
+    deleteVote(crewId, voteId) {
+        return new Promise((resolve) => {
+            setTimeout(() => {
+                console.log(`Deleting vote ${voteId} in crew ${crewId}`)
+                const index = mockVoteData.findIndex(v => v.id === voteId)
+                if (index !== -1) mockVoteData.splice(index, 1)
+                resolve({ success: true })
+            }, 500)
+        })
+    },
+
+    updateVoteStatus(crewId, voteId, status) {
+        return new Promise((resolve) => {
+             setTimeout(() => {
+                console.log(`Updating vote ${voteId} status to ${status}`)
+                const vote = mockVoteData.find(v => v.id === voteId)
+                if (vote) vote.status = status
+                resolve({ success: true })
+             }, 500)
         })
     },
 
