@@ -106,7 +106,6 @@ const mockVoteData = [
 ]
 export default {
     getCrews(params) {
-        // Transform keys for backend
         const qp = {
             search: params.search,
             region: params.region === '전체' ? undefined : params.region,
