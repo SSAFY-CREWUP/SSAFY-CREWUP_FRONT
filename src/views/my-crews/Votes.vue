@@ -139,6 +139,7 @@ const handleConfirm = async (participant) => {
         confirmButtonText: '확정',
         cancelButtonText: '취소',
         type: 'info',
+        customClass: 'premium-message-box'
     })
     
     await crewStore.confirmParticipant(crewId, selectedVote.value.id, participant.id)
@@ -166,6 +167,7 @@ const handleEndVote = async (vote) => {
             confirmButtonText: '종료',
             cancelButtonText: '취소',
             type: 'warning',
+            customClass: 'premium-message-box'
         })
         await crewStore.closeVote(crewId, vote.id)
         ElMessage.success('투표가 종료되었습니다.')
@@ -181,6 +183,7 @@ const handleDeleteVote = async (vote) => {
             confirmButtonText: '삭제',
             cancelButtonText: '취소',
             type: 'warning',
+            customClass: 'premium-message-box'
         })
         await crewStore.deleteVote(crewId, vote.id)
         ElMessage.success('투표가 삭제되었습니다.')
@@ -372,6 +375,14 @@ const handleDeleteVote = async (vote) => {
                      <span class="option-count">{{ opt.voters?.length || 0 }}명</span>
                  </div>
                  
+                 <!-- Gradient Progress Bar -->
+                 <div class="vote-progress-track">
+                    <div 
+                        class="vote-progress-fill" 
+                        :style="{ width: ((opt.voters?.length || 0) / (selectedVote.participants?.length || 1) * 100) + '%' }"
+                    ></div>
+                 </div>
+
                  <!-- Voter List (Hide details if anonymous and NOT manager, but usually anonymous hides for everyone except maybe admin, let's follow standard: anonymous means strictly anonymous names) -->
                 <!-- Assuming Manager CAN see anonymous? Or no? "무기명 투표가 아니라면..." means if NOT anonymous, show user info. So if anonymous, hide. -->
                  <div v-if="!selectedVote.isAnonymous" class="voter-avatars">
@@ -404,146 +415,211 @@ const handleDeleteVote = async (vote) => {
 </template>
 
 <style scoped>
+/* ... (existing styles) ... */
+
+.vote-progress-track {
+    width: 100%;
+    height: 8px;
+    background-color: #F3F4F6;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 8px; /* Spacing before avatar list */
+}
+
+.vote-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #6366f1, #a855f7);
+    border-radius: 4px;
+    transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
 .votes-view {
-  max-width: 800px;
+  max-width: 900px;
   margin: 0 auto;
-  padding-bottom: 40px;
+  padding-bottom: 60px;
 }
 
 .page-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 30px;
 }
 
 .page-header h2 {
-  font-size: 1.5rem;
-  font-weight: 700;
+  font-size: 1.8rem;
+  font-weight: 800;
   margin: 0;
+  color: #1F2937;
+  letter-spacing: -0.02em;
 }
 
 .btn-create {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 16px;
-  background: var(--color-primary);
+  gap: 8px;
+  padding: 10px 20px;
+  background: linear-gradient(135deg, #6366f1, #a855f7);
   color: white;
   border: none;
-  border-radius: 8px;
-  font-weight: 600;
+  border-radius: 12px;
+  font-weight: 700;
   cursor: pointer;
-  transition: background 0.2s;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+  transition: all 0.2s;
+  font-size: 0.95rem;
+}
+
+.btn-create:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(99, 102, 241, 0.4);
 }
 
 .vote-list {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  margin-top: 20px;
+  gap: 20px;
+  margin-top: 24px;
 }
 
 .vote-card {
   background: white;
-  border: 1px solid var(--color-border-light);
-  border-radius: 16px;
-  padding: 24px;
-  transition: transform 0.2s;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+  border: 1px solid #F3F4F6;
+  border-radius: 20px;
+  padding: 28px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.03);
+  position: relative;
+  overflow: hidden;
 }
 
 .vote-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 20px -6px rgba(0, 0, 0, 0.1);
+  border-color: #E0E7FF;
 }
 
 .card-header {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    margin-bottom: 12px;
+    margin-bottom: 16px;
 }
 
 .vote-status {
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   font-weight: 700;
+  padding: 6px 12px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #F3F4F6; /* Default gray for closed */
+  color: #6B7280;
 }
 
 .vote-flags {
     display: flex;
-    gap: 4px;
+    gap: 8px;
 }
 
 .vote-title {
-  font-size: 1.25rem;
-  font-weight: 700;
-  margin: 0 0 16px 0;
-  color: var(--color-text-primary);
+  font-size: 1.4rem;
+  font-weight: 800;
+  margin: 0 0 12px 0;
+  color: #1F2937;
+  letter-spacing: -0.01em;
 }
 
 .vote-meta {
   display: flex;
   gap: 16px;
-  color: var(--color-text-secondary);
-  font-size: 0.9rem;
+  color: #6B7280;
+  font-size: 0.95rem;
   margin-bottom: 24px;
+  font-weight: 500;
 }
 
 .meta-item {
   display: flex;
   align-items: center;
   gap: 6px;
+  background: #F9FAFB;
+  padding: 6px 12px;
+  border-radius: 8px;
 }
 
 .vote-actions {
     display: flex;
-    gap: 10px;
+    gap: 12px;
+    margin-top: auto;
 }
 
 .btn-vote, .btn-result, .btn-voted, .btn-approved, .btn-manage {
-  width: 100%;
+  flex: 1;
   padding: 14px;
   border: none;
-  border-radius: 12px;
-  font-weight: 600;
+  border-radius: 14px;
+  font-weight: 700;
   cursor: pointer;
   transition: all 0.2s;
   font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
 .btn-vote {
-  background: var(--color-primary);
+  background: linear-gradient(135deg, #6366f1, #818cf8);
   color: white;
+  box-shadow: 0 4px 10px rgba(99, 102, 241, 0.2);
 }
 
 .btn-vote:hover {
-  background: #45a049;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 15px rgba(99, 102, 241, 0.3);
 }
 
 .btn-result, .btn-voted {
-  background: #f5f5f5;
-  color: var(--color-text-primary);
+  background: #F3F4F6;
+  color: #4B5563;
+}
+
+.btn-result:hover, .btn-voted:hover {
+  background: #E5E7EB;
+  color: #1F2937;
 }
 
 .btn-approved {
-    background: #E8F5E9;
-    color: #4CAF50;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
+    background: #ECFDF5;
+    color: #10B981;
+    border: 1px solid #D1FAE5;
+}
+
+.btn-approved:hover {
+    background: #D1FAE5;
 }
 
 .btn-manage {
-  border: 1px solid var(--color-border);
   background: white;
+  border: 1px solid #E5E7EB;
+  color: #4B5563;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.btn-manage:hover {
+  background: #F9FAFB;
+  border-color: #D1D5DB;
 }
 
 .empty-state {
   text-align: center;
-  padding: 60px 0;
-  color: var(--color-text-tertiary);
+  padding: 80px 0;
+  color: #9CA3AF;
+  background: white;
+  border-radius: 20px;
+  border: 1px dashed #E5E7EB;
 }
 
 /* Modal Styles */
@@ -552,54 +628,108 @@ const handleDeleteVote = async (vote) => {
 }
 
 .modal-vote-title {
-    font-size: 1.2rem;
-    font-weight: 700;
+    font-size: 1.4rem;
+    font-weight: 800;
     margin-bottom: 8px;
+    color: #1F2937;
 }
 
 .modal-vote-desc {
-    color: #666;
-    margin-bottom: 20px;
-    font-size: 0.9rem;
+    color: #6B7280;
+    margin-bottom: 24px;
+    font-size: 0.95rem;
+}
+
+.options-list {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
 }
 
 .vertical-group {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 20px; /* Increased for better spacing */
     width: 100%;
 }
 
 .vertical-group .el-checkbox, .vertical-group .el-radio {
     margin-right: 0;
     width: 100%;
+}
+
+/* Premium Checkbox/Radio Styling Overrides in Global/Deep */
+:deep(.el-checkbox__inner), :deep(.el-radio__inner) {
+    width: 20px;
+    height: 20px;
+}
+
+:deep(.el-checkbox__label), :deep(.el-radio__label) {
+    font-size: 1rem;
+    font-weight: 500;
+    color: #374151;
+}
+
+:deep(.el-checkbox.is-bordered), :deep(.el-radio.is-bordered) {
+    padding: 16px;
     height: auto;
-    padding: 12px;
+    border-radius: 12px;
+    border-color: #E5E7EB;
+    transition: all 0.2s;
+    background: #F9FAFB;
+}
+
+:deep(.el-checkbox.is-bordered.is-checked), :deep(.el-radio.is-bordered.is-checked) {
+    background: #EEF2FF;
+    border-color: #6366f1;
+}
+
+:deep(.el-checkbox__input.is-checked .el-checkbox__inner), 
+:deep(.el-radio__input.is-checked .el-radio__inner) {
+    background-color: #6366f1;
+    border-color: #6366f1;
 }
 
 .btn-submit {
     width: 100%;
-    padding: 14px;
-    background: var(--color-primary);
+    padding: 16px;
+    background: linear-gradient(135deg, #6366f1, #a855f7);
     color: white;
     border: none;
-    border-radius: 8px;
+    border-radius: 14px;
     font-weight: 700;
     cursor: pointer;
     font-size: 1rem;
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+    transition: all 0.2s;
+}
+
+.btn-submit:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(99, 102, 241, 0.4);
 }
 
 /* Result Styles */
 .result-header {
-    margin-bottom: 20px;
-    padding-bottom: 16px;
-    border-bottom: 1px solid #eee;
+    margin-bottom: 24px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #F3F4F6;
 }
 
 .result-meta-tags {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    margin-top: 12px;
+}
+
+.total-count {
+    font-weight: 700;
+    color: #6366f1;
+    background: #EEF2FF;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.9rem;
 }
 
 .result-options-list {
@@ -618,75 +748,98 @@ const handleDeleteVote = async (vote) => {
     display: flex;
     justify-content: space-between;
     font-weight: 700;
-    padding: 8px 12px;
-    background: #f9f9f9;
-    border-radius: 8px;
+    padding: 12px 16px;
+    background: #F9FAFB;
+    border-radius: 12px;
+    border: 1px solid #F3F4F6;
+    color: #1F2937;
 }
+
+.option-count {
+    color: #6366f1;
+}
+
+/* Progress Bars could be added here if not using simple count display */
 
 .voter-avatars {
     display: flex;
     flex-direction: column;
     gap: 8px;
-    padding: 0 8px;
+    padding: 0 4px;
 }
 
 .voter-chip {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
     font-size: 0.9rem;
+    padding: 8px 12px;
+    border-radius: 10px;
+    transition: background 0.2s;
+}
+
+.voter-chip:hover {
+    background: #F9FAFB;
 }
 
 .voter-img {
-    width: 32px;
-    height: 32px;
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
     object-fit: cover;
+    border: 2px solid white;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 
 .voter-name {
-    font-weight: 500;
+    font-weight: 600;
+    color: #374151;
 }
 
 .voter-time {
     margin-left: auto;
-    color: #999;
+    color: #9CA3AF;
     font-size: 0.8rem;
+    font-weight: 500;
 }
 
 .anonymous-placeholder {
-    color: #999;
+    color: #9CA3AF;
     font-size: 0.9rem;
-    padding: 8px;
-    background: #fafafa;
-    border-radius: 6px;
+    padding: 16px;
+    background: #F9FAFB;
+    border-radius: 12px;
     text-align: center;
+    border: 1px dashed #E5E7EB;
 }
 
 .btn-manage.result {
-    color: var(--color-primary);
-    border-color: var(--color-primary);
+    color: #6366f1;
+    border-color: #EEF2FF;
+    background: #EEF2FF;
 }
 
 .btn-manage.result:hover {
-    background: #e3f2fd;
+    background: #E0E7FF;
 }
 
 .btn-manage.end {
-    color: #FF9800;
-    border-color: #FF9800;
+    color: #D97706; /* Amber 600 */
+    border-color: #FEF3C7;
+    background: #FEF3C7;
 }
 
 .btn-manage.end:hover {
-    background: #FFF3E0;
+    background: #FDE68A;
 }
 
 .btn-manage.delete {
-    color: #F44336;
-    border-color: #F44336;
+    color: #EF4444;
+    border-color: #FEE2E2;
+    background: #FEE2E2;
 }
 
 .btn-manage.delete:hover {
-    background: #FFEBEE;
+    background: #FECACA;
 }
 </style>

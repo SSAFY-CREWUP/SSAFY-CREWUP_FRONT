@@ -255,6 +255,7 @@ const getStatusBadge = (status) => {
 .loading-state {
   text-align: center;
   padding: 40px;
+  color: #9CA3AF;
 }
 
 .detail-container {
@@ -264,7 +265,7 @@ const getStatusBadge = (status) => {
 }
 
 .event-header-section {
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid #F3F4F6;
   padding-bottom: 20px;
 }
 
@@ -277,48 +278,56 @@ const getStatusBadge = (status) => {
 
 .event-status {
   font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--color-primary);
-  background: #e8f5e9;
-  padding: 4px 8px;
-  border-radius: 4px;
+  font-weight: 700;
+  color: #6366f1;
+  background: #EEF2FF;
+  padding: 4px 10px;
+  border-radius: 6px;
 }
 
 .event-status.completed {
-  color: #666;
-  background: #eee;
+  color: #6B7280;
+  background: #F3F4F6;
 }
 
 .event-header-section h2 {
   margin: 0 0 16px 0;
-  font-size: 1.5rem;
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #1F2937;
+  letter-spacing: -0.01em;
 }
 
 .meta-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
+  gap: 16px;
 }
 
 .meta-item {
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #666;
+  color: #4B5563;
+  font-weight: 500;
+  font-size: 0.95rem;
 }
 
 .content-section h3, .participants-section h3 {
   font-size: 1.1rem;
+  font-weight: 700;
   margin: 0 0 12px 0;
+  color: #374151;
 }
 
 .content-text {
   line-height: 1.6;
   white-space: pre-wrap;
-  color: #333;
-  background: #f9f9f9;
-  padding: 16px;
-  border-radius: 8px;
+  color: #4B5563;
+  background: #F9FAFB;
+  padding: 20px;
+  border-radius: 12px;
+  font-size: 0.95rem;
 }
 
 .section-header {
@@ -331,29 +340,52 @@ const getStatusBadge = (status) => {
 .participants-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  max-height: 200px;
+  gap: 10px;
+  max-height: 240px;
   overflow-y: auto;
+  padding-right: 4px; /* for scrollbar */
+}
+
+/* Custom Scrollbar */
+.participants-list::-webkit-scrollbar {
+  width: 6px;
+}
+.participants-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+.participants-list::-webkit-scrollbar-thumb {
+  background: #E5E7EB;
+  border-radius: 10px;
+}
+.participants-list::-webkit-scrollbar-thumb:hover {
+  background: #D1D5DB;
 }
 
 .participant-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 12px;
+  padding: 10px 16px;
   background: #fff;
-  border: 1px solid #eee;
-  border-radius: 8px;
+  border: 1px solid #F3F4F6;
+  border-radius: 12px;
+  transition: all 0.2s;
+}
+
+.participant-item:hover {
+  border-color: #E5E7EB;
+  background: #F9FAFB;
 }
 
 .p-info {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
 }
 
 .p-name {
-  font-weight: 500;
+  font-weight: 600;
+  color: #374151;
 }
 
 .p-status {
@@ -362,9 +394,71 @@ const getStatusBadge = (status) => {
   gap: 12px;
 }
 
+/* Dialog Footer */
+:deep(.el-dialog__footer) {
+  padding-top: 20px;
+  border-top: 1px solid #F3F4F6;
+}
+
 .dialog-footer {
   display: flex;
   justify-content: flex-end;
 }
 
+/* Modal Customization */
+:deep(.el-dialog) {
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+:deep(.el-dialog__header) {
+  margin-right: 0;
+  padding: 20px 24px;
+  border-bottom: 1px solid #F3F4F6;
+}
+
+:deep(.el-dialog__title) {
+  font-weight: 800;
+  font-size: 1.2rem;
+  color: #1F2937;
+}
+
+:deep(.el-dialog__body) {
+  padding: 24px;
+}
+
+/* Button Styles override */
+:deep(.el-button--default) {
+  border-radius: 12px;
+  background: #F3F4F6;
+  border: none;
+  color: #6B7280;
+  font-weight: 600;
+}
+
+:deep(.el-button--default:hover) {
+  background: #E5E7EB;
+  color: #374151;
+}
+
+:deep(.el-button--primary) {
+  border-radius: 12px;
+  background: linear-gradient(135deg, #6366f1, #a855f7);
+  border: none;
+  font-weight: 700;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
+:deep(.el-button--primary:hover) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(99, 102, 241, 0.4);
+}
+
+:deep(.el-button.is-disabled) {
+  background: #E5E7EB;
+  color: #9CA3AF;
+  box-shadow: none;
+  transform: none;
+}
 </style>

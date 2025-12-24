@@ -160,18 +160,18 @@ const handleSubmit = () => {
 .form-container {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 24px;
 }
 
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
 }
 
 .form-row {
     display: flex;
-    gap: 16px;
+    gap: 20px;
 }
 
 .form-group.half {
@@ -179,114 +179,159 @@ const handleSubmit = () => {
 }
 
 .form-group label {
-  font-weight: 600;
-  color: #333;
-  font-size: 0.9rem;
+  font-weight: 700;
+  color: #1F2937;
+  font-size: 0.95rem;
+}
+
+/* Premium Input Styles - Consistent with Board/Schedule */
+:deep(.el-input__wrapper), :deep(.el-textarea__inner) {
+    background-color: #F3F4F6;
+    box-shadow: none !important;
+    border: 1px solid transparent;
+    border-radius: 12px;
+    padding: 12px 16px;
+    height: auto;
+    transition: all 0.3s ease;
+}
+
+:deep(.el-input__inner) {
+    height: 24px;
+    font-size: 1rem;
+    color: #1F2937;
+    background: transparent;
+}
+
+:deep(.el-input__wrapper:hover), :deep(.el-textarea__inner:hover) {
+    background-color: #E5E7EB;
+}
+
+:deep(.el-input__wrapper.is-focus), :deep(.el-textarea__inner:focus) {
+    background-color: white;
+    border-color: #6366f1;
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.1) !important;
 }
 
 .option-row {
     display: flex;
-    gap: 8px;
+    gap: 10px;
     align-items: center;
 }
 
 .btn-icon {
-    width: 32px;
-    height: 32px;
-    border: 1px solid var(--color-border);
-    background: white;
-    border-radius: 6px;
+    width: 44px;
+    height: 44px;
+    border: none;
+    background: #FFEBEE;
+    border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    color: #666;
+    color: #EF4444;
     transition: all 0.2s;
+    flex-shrink: 0;
 }
 
 .btn-icon:hover {
-    background: #f5f5f5;
-    color: #E53935;
-    border-color: #E53935;
+    background: #FECACA;
+    transform: scale(1.05);
 }
 
 .btn-add-option {
     width: 100%;
-    padding: 10px;
-    border: 1px dashed var(--color-border);
-    background: #fafafa;
-    border-radius: 8px;
-    color: var(--color-text-secondary);
-    font-size: 0.9rem;
+    padding: 14px;
+    border: 1px dashed #D1D5DB;
+    background: #F9FAFB;
+    border-radius: 12px;
+    color: #6B7280;
+    font-size: 0.95rem;
     font-weight: 600;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 6px;
+    gap: 8px;
     transition: all 0.2s;
 }
 
 .btn-add-option:hover {
-    background: #f0f0f0;
-    border-color: #ccc;
-    color: var(--color-text-primary);
+    background: white;
+    border-color: #6366f1;
+    color: #6366f1;
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.1);
 }
 
 .divider {
     height: 1px;
-    background: #eee;
-    margin: 4px 0;
+    background: #F3F4F6;
+    margin: 8px 0;
 }
 
 .toggles-container {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 16px;
+    background: #F9FAFB;
+    padding: 20px;
+    border-radius: 16px;
+    border: 1px solid #F3F4F6;
 }
 
 .toggle-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 4px 0;
+    padding: 0;
 }
 
 .toggle-label {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
     font-size: 0.95rem;
-    color: var(--color-text-primary);
+    font-weight: 600;
+    color: #374151;
 }
 
 .dialog-footer {
   display: flex;
   justify-content: flex-end;
-  gap: 10px;
+  gap: 12px;
 }
 
 .btn-cancel {
-  padding: 10px 20px;
-  background: #f5f5f5;
+  padding: 14px 24px;
+  background: #F3F4F6;
   border: none;
-  border-radius: 8px;
-  font-weight: 600;
+  border-radius: 12px;
+  font-weight: 700;
   cursor: pointer;
-  color: #666;
+  color: #6B7280;
+  font-size: 0.95rem;
+  transition: all 0.2s;
+}
+
+.btn-cancel:hover {
+    background: #E5E7EB;
+    color: #1F2937;
 }
 
 .btn-submit {
-  padding: 10px 20px;
-  background: var(--color-primary);
+  padding: 14px 24px;
+  background: linear-gradient(135deg, #6366f1, #a855f7);
   color: white;
   border: none;
-  border-radius: 8px;
-  font-weight: 600;
+  border-radius: 12px;
+  font-weight: 700;
   cursor: pointer;
+  font-size: 0.95rem;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+  transition: all 0.2s;
 }
 
 .btn-submit:hover {
-  background: #45a049;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(99, 102, 241, 0.4);
 }
 </style>

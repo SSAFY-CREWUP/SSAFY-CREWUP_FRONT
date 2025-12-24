@@ -230,56 +230,74 @@ const handleDetailClose = () => {
 .schedule-view {
   max-width: 1200px;
   margin: 0 auto;
+  padding-bottom: 60px;
 }
 
 .page-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
+  margin-bottom: 30px;
 }
 
 .page-header h2 {
-  font-size: 1.5rem;
-  font-weight: 700;
+  font-size: 1.8rem;
+  font-weight: 800;
   margin: 0;
+  color: #1F2937;
+  letter-spacing: -0.02em;
 }
 
-.btn-add {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 16px;
-  background: var(--color-primary);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.2s;
-}
 
-.btn-add:hover {
-  background: #45a049;
-}
 
 .content-grid {
   display: grid;
-  grid-template-columns: 1fr 350px;
+  grid-template-columns: 1fr 340px;
   gap: 24px;
+  align-items: start;
 }
 
 /* Calendar Customization */
 .calendar-section {
   background: white;
-  border-radius: 12px;
-  padding: 20px;
-  box-shadow: var(--shadow-sm);
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+  border: 1px solid #F3F4F6;
+  transition: transform 0.3s ease;
+}
+
+.calendar-section:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.05); /* Subtle lift effect */
 }
 
 :deep(.el-calendar-table .el-calendar-day) {
-  height: 80px;
+  height: 85px;
   padding: 8px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+:deep(.el-calendar-table .el-calendar-day:hover) {
+  background-color: #F9FAFB;
+  transform: scale(0.98); /* Dynamic interaction */
+  border-radius: 12px;
+}
+
+/* Weekend Styling */
+/* Force standard color first */
+:deep(.el-calendar-table tr td .day-number) { 
+    color: #6B7280; /* Soft Gray (Tailwind Gray 500) - Much softer than black */
+}
+
+/* Sunday - Softer Rose/Red */
+:deep(.el-calendar-table tr td:first-child .day-number) {
+    color: #F87171; /* Soft Red (Tailwind Red 400) */
+}
+
+/* Saturday - Softer Blue */
+:deep(.el-calendar-table tr td:nth-child(7) .day-number) {
+    color: #60A5FA; /* Soft Blue (Tailwind Blue 400) */
 }
 
 .custom-date-cell {
@@ -290,18 +308,53 @@ const handleDetailClose = () => {
 }
 
 .day-number {
-  font-weight: 600;
-  font-size: 0.9rem;
+  font-weight: 700; /* Increased weight */
+  font-size: 0.95rem; /* Slightly larger */
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  
+  /* Remove any default transparency/lightness */
+  opacity: 1 !important; 
 }
 
 .day-number.is-selected {
-  color: var(--color-primary);
+  background-color: #6366f1;
+  color: white !important; /* Ensure white text on selected */
+}
+.btn-add {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: #6366f1; /* Solid Indigo - Simplified */
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(99, 102, 241, 0.2); /* Softer shadow */
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Bouncy transition */
+  font-size: 0.95rem;
+}
+
+.btn-add:hover {
+  background: #4F46E5; /* Darker Indigo on hover */
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 8px 16px rgba(99, 102, 241, 0.3);
+}
+
+.btn-add:active {
+  transform: scale(0.95);
 }
 
 .date-events {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
   width: 100%;
   overflow: hidden;
 }
@@ -310,13 +363,18 @@ const handleDetailClose = () => {
   display: flex;
   align-items: center;
   gap: 4px;
-  padding: 2px 4px;
+  padding: 2px 6px;
   border-radius: 4px;
   font-size: 0.75rem;
   width: 100%;
   box-sizing: border-box;
   white-space: nowrap;
   overflow: hidden;
+  transition: transform 0.1s;
+}
+
+.mini-event-item:hover {
+  transform: scale(1.02);
 }
 
 .event-dot {
@@ -329,23 +387,27 @@ const handleDetailClose = () => {
 .event-text {
   overflow: hidden;
   text-overflow: ellipsis;
-  font-weight: 500;
+  font-weight: 600;
 }
 
 /* Upcoming Section */
 .upcoming-section {
-  background: white;
-  border-radius: 12px;
-  padding: 20px;
-  box-shadow: var(--shadow-sm);
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  padding: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.6);
   height: fit-content;
 }
 
 .upcoming-section h3 {
-  font-size: 1.1rem;
-  font-weight: 700;
-  margin: 0 0 16px 0;
-  color: var(--color-text-primary);
+  font-size: 1.2rem;
+  font-weight: 800;
+  margin: 0 0 20px 0;
+  color: #1F2937;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .event-list {
@@ -355,43 +417,44 @@ const handleDetailClose = () => {
 }
 
 .scrollable-list {
-  max-height: 500px;
+  max-height: 520px;
   overflow-y: auto;
-  padding-right: 4px; /* For scrollbar space */
+  padding-right: 4px;
 }
 
-/* Custom Scrollbar for the list */
+/* Custom Scrollbar */
 .scrollable-list::-webkit-scrollbar {
   width: 6px;
 }
-
 .scrollable-list::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 3px;
+  background: transparent;
 }
-
 .scrollable-list::-webkit-scrollbar-thumb {
-  background: #ccc;
-  border-radius: 3px;
+  background: #E5E7EB;
+  border-radius: 10px;
 }
-
 .scrollable-list::-webkit-scrollbar-thumb:hover {
-  background: #bbb;
+  background: #D1D5DB;
 }
 
 .event-card {
   display: flex;
   gap: 16px;
-  padding: 12px;
-  border: 1px solid var(--color-border-light);
-  border-radius: 12px;
-  transition: transform 0.2s;
+  padding: 16px;
+  background: white;
+  border: 1px solid #F3F4F6;
+  border-radius: 16px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.03);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
 }
 
 .event-card:hover {
-  transform: translateX(4px);
-  border-color: var(--color-primary);
-  cursor: pointer;
+  transform: translateY(-4px);
+  box-shadow: 0 12px 20px -6px rgba(0, 0, 0, 0.1);
+  border-color: #E0E7FF;
 }
 
 .event-date-box {
@@ -399,22 +462,24 @@ const handleDetailClose = () => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: #f5f5f5;
-  border-radius: 8px;
-  width: 60px;
-  height: 60px;
+  background: #EEF2FF;
+  border-radius: 12px;
+  width: 64px;
+  height: 64px;
   flex-shrink: 0;
+  color: #6366f1;
 }
 
 .event-date-box .month {
   font-size: 0.75rem;
-  color: var(--color-text-secondary);
+  font-weight: 600;
+  opacity: 0.8;
 }
 
 .event-date-box .day {
-  font-size: 1.2rem;
+  font-size: 1.3rem;
   font-weight: 800;
-  color: var(--color-text-primary);
+  line-height: 1;
 }
 
 .event-info {
@@ -422,31 +487,45 @@ const handleDetailClose = () => {
   display: flex;
   flex-direction: column;
   justify-content: center;
+  min-width: 0; /* Fix flex ellipsis issue */
+}
+
+.event-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 6px;
 }
 
 .event-badges {
-  margin-bottom: 4px;
+  display: flex;
 }
 
 .type-badge {
   font-size: 0.7rem;
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
 }
 
 .event-title {
-  font-size: 1rem;
+  font-size: 1.05rem;
   font-weight: 700;
-  margin: 0 0 4px 0;
-  color: var(--color-text-primary);
+  margin: 0 0 6px 0;
+  color: #1F2937;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .event-meta {
   display: flex;
-  gap: 12px;
-  font-size: 0.8rem;
-  color: var(--color-text-secondary);
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 0.85rem;
+  color: #6B7280;
+  margin-bottom: 8px;
 }
 
 .event-meta span {
@@ -455,47 +534,11 @@ const handleDetailClose = () => {
   gap: 4px;
 }
 
-.empty-state {
-  text-align: center;
-  padding: 20px;
-  color: var(--color-text-tertiary);
-  font-size: 0.9rem;
-}
-
-@media (max-width: 1024px) {
-  .content-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-.event-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 4px;
-}
-
-.btn-delete {
-  background: none;
-  border: none;
-  color: #999;
-  cursor: pointer;
-  padding: 4px;
-  border-radius: 4px;
-  transition: all 0.2s;
-}
-
-.btn-delete:hover {
-  background: #fee;
-  color: #f44336;
-}
-
 .event-details {
-  margin-top: 8px;
   padding-top: 8px;
-  border-top: 1px dashed #eee;
+  border-top: 1px dashed #F3F4F6;
   font-size: 0.85rem;
-  color: #666;
+  color: #6B7280;
 }
 
 .participants {
@@ -503,16 +546,56 @@ const handleDetailClose = () => {
   align-items: center;
   gap: 4px;
   margin-bottom: 4px;
-  font-weight: 500;
-  color: var(--color-primary);
+  font-weight: 600;
+  color: #6366f1;
+  font-size: 0.85rem;
 }
 
 .event-content {
   margin: 0;
-  line-height: 1.4;
+  line-height: 1.5;
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  font-size: 0.85rem;
+  color: #4B5563;
+}
+
+.btn-delete {
+  background: none;
+  border: none;
+  color: #9CA3AF;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  transition: all 0.2s;
+  opacity: 0; /* Hidden by default */
+}
+
+.event-card:hover .btn-delete {
+  opacity: 1;
+}
+
+.btn-delete:hover {
+  background: #FEF2F2;
+  color: #EF4444;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 40px;
+  color: #9CA3AF;
+  font-size: 0.95rem;
+  background: rgba(255,255,255,0.5);
+  border-radius: 12px;
+  border: 1px dashed #E5E7EB;
+}
+
+@media (max-width: 850px) {
+  .content-grid {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

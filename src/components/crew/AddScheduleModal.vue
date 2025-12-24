@@ -165,10 +165,11 @@ const handleSubmit = () => {
 </template>
 
 <style scoped>
+/* Premium Form Styles */
 .form-container {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 24px;
 }
 
 .form-group {
@@ -178,9 +179,9 @@ const handleSubmit = () => {
 }
 
 .form-group label {
-  font-weight: 600;
-  color: #333;
-  font-size: 0.9rem;
+  font-weight: 700;
+  color: #374151;
+  font-size: 0.95rem;
 }
 
 .form-row {
@@ -192,33 +193,134 @@ const handleSubmit = () => {
   flex: 1;
 }
 
+/* Custom Radio Group (Segmented Control) */
+:deep(.el-radio-group) {
+  display: flex;
+  width: 100%;
+  background: #F3F4F6;
+  padding: 4px;
+  border-radius: 12px;
+}
+
+:deep(.el-radio-button) {
+  flex: 1;
+}
+
+:deep(.el-radio-button__inner) {
+  width: 100%;
+  background: transparent;
+  border: none !important;
+  box-shadow: none !important;
+  color: #6B7280;
+  font-weight: 600;
+  padding: 10px 0;
+  border-radius: 8px !important;
+}
+
+:deep(.el-radio-button.is-active .el-radio-button__inner) {
+  background: white !important;
+  color: #6366f1 !important;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05) !important;
+}
+
+/* Premium Input Styles (Global for this component) */
+:deep(.el-input__wrapper),
+:deep(.el-textarea__inner),
+:deep(.el-select__wrapper),
+:deep(.el-input-number__decrease),
+:deep(.el-input-number__increase) {
+  background-color: #F3F4F6;
+  box-shadow: none !important;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  padding: 10px 14px;
+  transition: all 0.2s;
+}
+
+:deep(.el-input-number__decrease),
+:deep(.el-input-number__increase) {
+  border-radius: 8px; /* Slightly smaller radius for buttons */
+  background-color: white;
+  border: 1px solid #E5E7EB;
+}
+
+:deep(.el-input__wrapper:hover),
+:deep(.el-textarea__inner:hover),
+:deep(.el-select__wrapper:hover) {
+  background-color: #E5E7EB;
+}
+
+:deep(.el-input__wrapper.is-focus),
+:deep(.el-textarea__inner:focus),
+:deep(.el-select__wrapper.is-focused) {
+  background-color: white;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1) !important;
+}
+
+/* Dialog Footer */
+:deep(.el-dialog__footer) {
+  padding-top: 20px;
+  border-top: 1px solid #F3F4F6;
+}
+
 .dialog-footer {
   display: flex;
   justify-content: flex-end;
-  gap: 10px;
+  gap: 12px;
 }
 
 .btn-cancel {
   padding: 10px 20px;
-  background: #f5f5f5;
+  background: #F3F4F6;
   border: none;
-  border-radius: 8px;
+  border-radius: 12px;
   font-weight: 600;
   cursor: pointer;
-  color: #666;
+  color: #6B7280;
+  transition: all 0.2s;
+}
+
+.btn-cancel:hover {
+  background: #E5E7EB;
+  color: #374151;
 }
 
 .btn-submit {
-  padding: 10px 20px;
-  background: var(--color-primary);
+  padding: 10px 24px;
+  background: linear-gradient(135deg, #6366f1, #a855f7);
   color: white;
   border: none;
-  border-radius: 8px;
-  font-weight: 600;
+  border-radius: 12px;
+  font-weight: 700;
   cursor: pointer;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+  transition: all 0.2s;
 }
 
 .btn-submit:hover {
-  background: #45a049;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(99, 102, 241, 0.4);
+}
+
+:deep(.el-dialog) {
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+:deep(.el-dialog__header) {
+  margin-right: 0;
+  padding: 20px 24px;
+  border-bottom: 1px solid #F3F4F6;
+}
+
+:deep(.el-dialog__title) {
+  font-weight: 800;
+  font-size: 1.2rem;
+  color: #1F2937;
+}
+
+:deep(.el-dialog__body) {
+  padding: 24px;
 }
 </style>

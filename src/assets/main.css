@@ -12,3 +12,66 @@ main {
   flex: 1;
   width: 100%;
 }
+
+/* Premium Global Styles for ElMessageBox */
+.premium-message-box {
+  border-radius: 20px !important;
+  border: 1px solid #F3F4F6 !important;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1) !important;
+  padding-bottom: 20px !important;
+}
+
+.premium-message-box .el-message-box__header {
+  padding-top: 24px !important;
+}
+
+.premium-message-box .el-message-box__title {
+  font-size: 1.2rem !important;
+  font-weight: 800 !important;
+  color: #1F2937 !important;
+}
+
+.premium-message-box .el-message-box__content {
+  font-size: 1rem !important;
+  color: #4B5563 !important;
+  padding: 16px 24px !important;
+}
+
+.premium-message-box .el-message-box__btns {
+  padding: 10px 24px 0 !important;
+  display: flex !important;
+  justify-content: flex-end !important;
+  gap: 12px !important;
+}
+
+.premium-message-box .el-button--primary {
+  background: linear-gradient(135deg, #F59E0B, #D97706) !important; /* Warning/Amber styling for confirms usually */
+  border: none !important;
+  padding: 10px 24px !important;
+  border-radius: 10px !important;
+  font-weight: 700 !important;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2) !important;
+  transition: transform 0.2s !important;
+}
+
+.premium-message-box .el-button--primary:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 16px rgba(245, 158, 11, 0.3) !important;
+}
+
+.premium-message-box .el-button--default {
+  background: #F3F4F6 !important;
+  border: none !important;
+  color: #6B7280 !important;
+  padding: 10px 20px !important;
+  border-radius: 10px !important;
+  font-weight: 600 !important;
+}
+
+.premium-message-box .el-button--default:hover {
+  background: #E5E7EB !important;
+  color: #374151 !important;
+}
+
+/* Type specific overrides if needed (e.g. Info vs Warning) */
+/* Assuming primary action corresponds appropriately, usually confirming an action */
