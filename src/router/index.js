@@ -108,11 +108,8 @@ const router = createRouter({
                     component: () => import('../views/my-crews/SpecialSessions.vue')
                 },
                 // Crew Management
-                {
-                    path: 'manage/requests',
-                    name: 'manage-requests',
-                    component: () => import('../views/manage/RequestManage.vue')
-                },
+                // Removed redundant manage/requests route as it is now integrated into Members.vue tabs
+
                 {
                     path: 'settings',
                     name: 'crew-settings',

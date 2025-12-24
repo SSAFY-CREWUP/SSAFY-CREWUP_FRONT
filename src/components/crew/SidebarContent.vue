@@ -36,18 +36,8 @@ const props = defineProps({
         <span>{{ item.name }}</span>
       </div>
 
-      <!-- Manager Section -->
-      <div v-if="['크루장', '매니저', 'LEADER', 'MANAGER'].includes(userStats.role)" class="nav-section">
-        <div class="nav-section-title">크루 관리</div>
-        <div 
-          class="nav-item"
-          :class="{ active: isActive('manage/requests') }"
-          @click="navigateTo('manage/requests')"
-        >
-          <el-icon :size="20"><UserFilled /></el-icon>
-          <span>가입 신청 관리</span>
-        </div>
-      </div>
+      <!-- Manager Section Removed -->
+
     </nav>
 
     <!-- Notifications Removed -->

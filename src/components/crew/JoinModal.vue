@@ -2,6 +2,7 @@
 import { reactive, defineProps, defineEmits } from 'vue'
 import { useCrewStore } from '../../stores/crew'
 import Swal from 'sweetalert2'
+import { EditPen } from '@element-plus/icons-vue'
 
 const props = defineProps({
   modelValue: Boolean,
@@ -15,8 +16,6 @@ const joinForm = reactive({
   message: '',
   agreed: false
 })
-
-
 
 const handleJoin = async () => {
   if (!joinForm.message.trim()) {
@@ -40,8 +39,8 @@ const handleJoin = async () => {
     emit('success')
     
     // 3. 폼 리셋
-    
     joinForm.agreed = false
+    joinForm.message = ''
     
     // 4. 성공 알림
     setTimeout(() => {
@@ -67,23 +66,34 @@ const close = () => {
     @update:model-value="emit('update:modelValue', $event)"
     title="가입 신청"
     width="500px"
-    class="join-modal"
+    class="premium-modal join-modal"
     align-center
+    :show-close="false"
   >
     <div class="modal-content">
-  <div class="form-group">
-    <label>한 줄 소개</label>
+        <div class="modal-header-visual">
+             <div class="icon-circle">
+                 <el-icon><EditPen /></el-icon>
+             </div>
+             <h3>크루에 합류하세요!</h3>
+             <p>멤버들에게 전할 간단한 인사말을 남겨주세요.</p>
+        </div>
+
+      <div class="form-group">
+        <label class="premium-label">한 줄 소개</label>
         <el-input
           v-model="joinForm.message"
           type="textarea"
-          :rows="3"
-          placeholder="크루장에게 보낼 간단한 인사를 남겨주세요."
+          :rows="4"
+          placeholder="자기소개나 가입 동기를 짧게 적어주세요!"
+          class="premium-textarea"
+          resize="none"
         />
-  </div>
+      </div>
 
-      <div class="form-group checkbox-group">
-        <el-checkbox v-model="joinForm.agreed">
-          크루의 운영 규칙을 준수하며 성실히 활동하겠습니다.
+      <div class="agreement-box">
+        <el-checkbox v-model="joinForm.agreed" class="premium-checkbox">
+          <span class="checkbox-text">크루의 운영 규칙을 준수하며<br>성실히 활동하겠습니다.</span>
         </el-checkbox>
       </div>
     </div>
@@ -98,49 +108,101 @@ const close = () => {
 
 <style scoped>
 .modal-content {
-  padding: 10px 0;
+  padding: 10px 10px 0;
+}
+
+.modal-header-visual {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.icon-circle {
+    width: 60px;
+    height: 60px;
+    background: #EEF2FF;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 16px;
+    color: #6366f1;
+    font-size: 1.8rem;
+    border: 1px solid #E0E7FF;
+}
+
+.modal-header-visual h3 {
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: #1F2937;
+    margin: 0 0 8px 0;
+}
+
+.modal-header-visual p {
+    color: #6B7280;
+    font-size: 0.95rem;
+    margin: 0;
 }
 
 .form-group {
   margin-bottom: 24px;
 }
 
-.form-group label {
+.premium-label {
   display: block;
-  font-weight: 600;
-  margin-bottom: 8px;
-  color: #374151; /* Dark Gray */
-  font-size: 0.95rem;
+  font-weight: 700;
+  margin-bottom: 10px;
+  color: #374151;
+  font-size: 1rem;
 }
 
-/* Custom Input Styling */
-:deep(.el-textarea__inner) {
+/* Premium Textarea */
+.premium-textarea :deep(.el-textarea__inner) {
   background-color: #F9FAFB;
-  border: 1px solid #E5E7EB;
-  border-radius: 12px;
-  padding: 12px;
+  border: 2px solid #F3F4F6;
+  border-radius: 16px;
+  padding: 16px;
   color: #1F2937;
   font-family: inherit;
-  transition: all 0.2s;
+  font-size: 1rem;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: none;
 }
 
-:deep(.el-textarea__inner:focus) {
+.premium-textarea :deep(.el-textarea__inner:hover) {
+    background-color: white;
+    border-color: #E5E7EB;
+}
+
+.premium-textarea :deep(.el-textarea__inner:focus) {
   border-color: #6366f1;
   background-color: white;
   box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
 }
 
-.checkbox-group {
-  margin-bottom: 0;
+.agreement-box {
+    background: #F9FAFB;
+    padding: 16px;
+    border-radius: 16px;
+    border: 1px dashed #D1D5DB;
+    display: flex;
+    justify-content: center;
 }
 
-.checkbox-group :deep(.el-checkbox__label) {
-  color: #4B5563 !important;
-  font-weight: 500;
+.premium-checkbox :deep(.el-checkbox__label) {
+    color: #4B5563 !important;
+    font-weight: 600;
+    line-height: 1.4;
+    white-space: normal; /* Allow branding text wrap */
 }
 
-.checkbox-group :deep(.el-checkbox__input.is-checked .el-checkbox__inner) {
+.premium-checkbox :deep(.el-checkbox__inner) {
+    width: 20px;
+    height: 20px;
+    border-radius: 6px;
+    border-width: 2px;
+}
+
+.premium-checkbox :deep(.el-checkbox__input.is-checked .el-checkbox__inner) {
   background-color: #6366f1;
   border-color: #6366f1;
 }
@@ -148,19 +210,25 @@ const close = () => {
 .dialog-footer {
   display: flex;
   gap: 12px;
-  justify-content: flex-end;
+  justify-content: center; /* Centered buttons */
   padding-top: 10px;
+  width: 100%;
+}
+
+.btn-cancel, .btn-submit {
+  flex: 1; /* Equal width buttons */
+  padding: 14px 20px;
+  border-radius: 14px;
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
 }
 
 .btn-cancel {
-  padding: 12px 24px;
   background: #F3F4F6;
-  border: none;
-  border-radius: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  color: #4B5563;
-  transition: all 0.2s;
+  color: #6B7280;
 }
 
 .btn-cancel:hover {
@@ -169,21 +237,14 @@ const close = () => {
 }
 
 .btn-submit {
-  padding: 12px 24px;
-  background: #6366f1; /* Primary Indigo */
+  background: linear-gradient(135deg, #6366f1, #8b5cf6); /* Gradient */
   color: white;
-  border: none;
-  border-radius: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
 }
 
 .btn-submit:hover {
-  background: #4F46E5;
-  transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgba(99, 102, 241, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(99, 102, 241, 0.35);
 }
 
 .btn-submit:active {
@@ -192,8 +253,29 @@ const close = () => {
 </style>
 
 <style>
-/* Ensure SweetAlert appears above Element Plus Dialog (z-index ~2000) */
+/* Global Override to ensure SweetAlert z-index */
 .swal2-container {
-  z-index: 3000 !important;
+  z-index: 9999 !important;
+}
+
+/* Premium Modal styling override */
+.premium-modal {
+    border-radius: 24px !important;
+    overflow: hidden;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+}
+
+.premium-modal .el-dialog__header {
+    margin-right: 0 !important;
+    text-align: center;
+    border-bottom: none !important;
+    padding-top: 24px;
+}
+
+.premium-modal .el-dialog__title {
+    font-weight: 800;
+    font-size: 1.2rem;
+    color: #111827;
+    display: none; /* Hidden as we have custom header visual */
 }
 </style>
