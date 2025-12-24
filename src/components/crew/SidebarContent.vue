@@ -20,7 +20,7 @@ const props = defineProps({
     <div class="crew-info" v-if="crew">
       <img :src="crew.image" alt="Crew Logo" class="crew-logo" />
       <h2 class="crew-name">{{ crew.name }}</h2>
-      <el-tag size="small" effect="dark" type="success" class="role-badge">{{ userStats.role }}</el-tag>
+      <el-tag size="small" effect="dark" color="#6366f1" class="role-badge" style="border: none;">{{ userStats.role }}</el-tag>
     </div>
 
     <!-- Navigation -->
@@ -50,8 +50,6 @@ const props = defineProps({
       </div>
     </nav>
 
-
-
     <!-- Notifications Removed -->
   </div>
 </template>
@@ -76,7 +74,7 @@ const props = defineProps({
   height: 80px;
   border-radius: 50%;
   object-fit: cover;
-  border: 2px solid var(--color-primary);
+  border: 2px solid #6366f1;
 }
 
 .crew-name {
@@ -106,13 +104,13 @@ const props = defineProps({
 }
 
 .nav-item:hover {
-  background-color: var(--color-bg-secondary);
-  color: var(--color-text-primary);
+  background-color: #F9FAFB;
+  color: #6366f1;
 }
 
 .nav-item.active {
-  background-color: #e8f5e9; /* Light Green */
-  color: var(--color-primary);
+  background-color: #EEF2FF; /* Light Indigo */
+  color: #6366f1;
   font-weight: 700;
 }
 

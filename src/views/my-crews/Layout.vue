@@ -96,7 +96,7 @@ const navigateTo = (path) => {
 .crew-layout {
   display: flex;
   min-height: calc(100vh - 64px); /* Subtract Navbar height */
-  background-color: #f5f7fa;
+  background-color: #F9FAFB; /* Global Light Gray Background */
   position: relative;
 }
 
@@ -106,12 +106,12 @@ const navigateTo = (path) => {
   position: fixed;
   bottom: calc(20px + env(safe-area-inset-bottom));
   right: 20px;
-  background: var(--color-primary);
+  background: #6366f1; /* Primary Indigo */
   color: white;
   padding: 12px 20px;
   border-radius: 30px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-  z-index: 9999; /* Ensure it's above everything */
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+  z-index: 9999;
   align-items: center;
   gap: 8px;
   cursor: pointer;
@@ -125,9 +125,9 @@ const navigateTo = (path) => {
 
 /* Sidebar */
 .sidebar {
-  width: 250px; /* Fixed width */
+  width: 250px;
   background: white;
-  border-right: 1px solid var(--color-border-light);
+  border-right: 1px solid #F3F4F6;
   padding: 24px;
   display: flex;
   flex-direction: column;
