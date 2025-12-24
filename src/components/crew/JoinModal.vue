@@ -109,52 +109,85 @@ const close = () => {
   display: block;
   font-weight: 600;
   margin-bottom: 8px;
-  color: #1a1a1a;
+  color: #374151; /* Dark Gray */
+  font-size: 0.95rem;
 }
 
+/* Custom Input Styling */
+:deep(.el-textarea__inner) {
+  background-color: #F9FAFB;
+  border: 1px solid #E5E7EB;
+  border-radius: 12px;
+  padding: 12px;
+  color: #1F2937;
+  font-family: inherit;
+  transition: all 0.2s;
+  box-shadow: none;
+}
 
+:deep(.el-textarea__inner:focus) {
+  border-color: #6366f1;
+  background-color: white;
+  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+}
 
 .checkbox-group {
   margin-bottom: 0;
 }
 
 .checkbox-group :deep(.el-checkbox__label) {
-  color: #2c2c2c !important;
+  color: #4B5563 !important;
   font-weight: 500;
+}
+
+.checkbox-group :deep(.el-checkbox__input.is-checked .el-checkbox__inner) {
+  background-color: #6366f1;
+  border-color: #6366f1;
 }
 
 .dialog-footer {
   display: flex;
-  gap: 10px;
+  gap: 12px;
   justify-content: flex-end;
+  padding-top: 10px;
 }
 
 .btn-cancel {
-  padding: 10px 20px;
-  background: #f5f5f5;
+  padding: 12px 24px;
+  background: #F3F4F6;
   border: none;
-  border-radius: 8px;
+  border-radius: 12px;
   font-weight: 600;
   cursor: pointer;
-  color: #2c2c2c;
+  color: #4B5563;
+  transition: all 0.2s;
 }
 
 .btn-cancel:hover {
-  background: #e0e0e0;
+  background: #E5E7EB;
+  color: #1F2937;
 }
 
 .btn-submit {
-  padding: 10px 20px;
-  background: #4CAF50;
+  padding: 12px 24px;
+  background: #6366f1; /* Primary Indigo */
   color: white;
   border: none;
-  border-radius: 8px;
+  border-radius: 12px;
   font-weight: 600;
   cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
 }
 
 .btn-submit:hover {
-  background: #45a049;
+  background: #4F46E5;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(99, 102, 241, 0.3);
+}
+
+.btn-submit:active {
+  transform: scale(0.98);
 }
 </style>
 

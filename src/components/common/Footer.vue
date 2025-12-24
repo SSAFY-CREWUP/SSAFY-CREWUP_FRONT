@@ -15,9 +15,9 @@
         </div>
 
         <div class="footer-social">
-          <a href="#" class="social-icon">Instagram</a>
-          <a href="#" class="social-icon">Facebook</a>
-          <a href="#" class="social-icon">Twitter</a>
+          <a href="https://github.com/SSAFY-CREWUP/SSAFY-CREWUP-SERVER" target="_blank" class="social-icon">
+            Github
+          </a>
         </div>
       </div>
       
@@ -30,10 +30,11 @@
 
 <style scoped>
 .footer {
-  background-color: #2c3e50;
-  color: white;
-  padding: 60px 0 30px;
-  font-family: 'Noto Sans KR', sans-serif;
+  background-color: #111827; /* Dark Background */
+  color: #F9FAFB; /* Light Text */
+  padding: 80px 0 40px;
+  font-family: 'Pretendard', 'Noto Sans KR', sans-serif;
+  border-top: 1px solid #1F2937;
 }
 
 .footer-container {
@@ -47,62 +48,76 @@
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 40px;
-  margin-bottom: 40px;
+  margin-bottom: 60px;
 }
 
 .footer-brand h3 {
   font-size: 1.5rem;
-  font-weight: 700;
-  margin-bottom: 10px;
+  font-weight: 800;
+  margin-bottom: 12px;
+  background: linear-gradient(135deg, #818cf8, #c084fc);
+  background-clip: text; /* Standard Property */
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .footer-brand p {
-  color: #bdc3c7;
-  font-size: 0.9rem;
+  color: #9CA3AF;
+  font-size: 0.95rem;
+  font-weight: 500;
 }
 
 .footer-links {
   display: flex;
-  gap: 20px;
+  gap: 24px;
 }
 
 .footer-links a {
-  color: #ecf0f1;
+  color: #D1D5DB;
   text-decoration: none;
-  transition: color 0.3s;
+  font-weight: 500;
+  transition: color 0.2s;
+  font-size: 0.95rem;
 }
 
 .footer-links a:hover {
-  color: var(--color-running-green);
+  color: #818cf8; /* Light Indigo */
 }
 
 .footer-social {
   display: flex;
-  gap: 15px;
+  gap: 12px;
 }
 
 .social-icon {
-  color: #bdc3c7;
+  color: #D1D5DB;
   text-decoration: none;
   font-size: 0.9rem;
-  border: 1px solid #bdc3c7;
-  padding: 5px 15px;
+  border: 1px solid #374151;
+  padding: 8px 20px;
   border-radius: 20px;
-  transition: all 0.3s;
+  transition: all 0.2s;
+  background: #1F2937;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .social-icon:hover {
-  background: white;
-  color: #2c3e50;
-  border-color: white;
+  background: #374151;
+  color: white;
+  border-color: #4B5563;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .footer-bottom {
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid #1F2937;
   padding-top: 30px;
   text-align: center;
-  color: #95a5a6;
-  font-size: 0.9rem;
+  color: #6B7280;
+  font-size: 0.85rem;
 }
 
 @media (max-width: 768px) {
@@ -114,7 +129,7 @@
   
   .footer-links {
     flex-direction: column;
-    gap: 15px;
+    gap: 16px;
   }
 }
 </style>
