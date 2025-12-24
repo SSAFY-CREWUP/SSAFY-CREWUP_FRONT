@@ -32,13 +32,27 @@ const handleSearch = () => {
 const filteredMembers = computed(() => {
   if (!activeSearch.value) return crewStore.members
   const query = activeSearch.value.toLowerCase()
-  return crewStore.members.filter(m => m.name.toLowerCase().includes(query))
+  return crewStore.members.filter(m => m.nickname.toLowerCase().includes(query))
 })
 
 const getRoleBadgeType = (role) => {
-  if (role === '크루장') return 'danger'
-  if (role === '매니저') return 'warning'
+  if (role === 'LEADER') return 'danger'
+  if (role === 'MANAGER') return 'warning'
   return 'info'
+}
+
+const formatRole = (role) => {
+  const roleMap = {
+    'LEADER': '크루장',
+    'MANAGER': '매니저',
+    'MEMBER': '정회원'
+  }
+  return roleMap[role] || role
+}
+
+const formatDate = (dateStr) => {
+  if (!dateStr) return '-'
+  return dateStr.split('T')[0]
 }
 </script>
 
@@ -69,8 +83,8 @@ const getRoleBadgeType = (role) => {
         <el-table-column label="멤버" width="250">
           <template #default="scope">
             <div class="member-profile">
-              <img :src="scope.row.image" alt="Profile" class="profile-img" />
-              <span class="member-name">{{ scope.row.name }}</span>
+              <img :src="scope.row.profileImage || 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'" alt="Profile" class="profile-img" />
+              <span class="member-name">{{ scope.row.nickname }}</span>
             </div>
           </template>
         </el-table-column>
@@ -79,29 +93,29 @@ const getRoleBadgeType = (role) => {
         <el-table-column label="권한" width="120">
           <template #default="scope">
             <el-tag :type="getRoleBadgeType(scope.row.role)" size="small" effect="light">
-              {{ scope.row.role }}
+              {{ formatRole(scope.row.role) }}
             </el-tag>
           </template>
         </el-table-column>
 
         <!-- Total Distance -->
-        <el-table-column label="총 거리" prop="distance">
+        <el-table-column label="총 거리" prop="totalDistance">
           <template #default="scope">
-            {{ scope.row.distance }} km
+            {{ scope.row.totalDistance }} km
           </template>
         </el-table-column>
 
         <!-- Average Pace -->
-        <el-table-column label="평균 페이스" prop="pace">
+        <el-table-column label="평균 페이스" prop="averagePace">
           <template #default="scope">
-            {{ scope.row.pace }}/km
+            {{ scope.row.averagePace }}/km
           </template>
         </el-table-column>
 
         <!-- Join Date -->
-        <el-table-column label="가입일" prop="joinDate">
+        <el-table-column label="가입일" prop="joinedAt">
            <template #default="scope">
-            {{ scope.row.joinDate }}
+            {{ formatDate(scope.row.joinedAt) }}
           </template>
         </el-table-column>
       </el-table>

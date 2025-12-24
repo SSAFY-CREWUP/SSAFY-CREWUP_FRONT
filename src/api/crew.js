@@ -20,7 +20,7 @@ const generateMockCrews = (count) => {
     return Array.from({ length: count }, (_, i) => {
         const age = ageOptions[Math.floor(Math.random() * ageOptions.length)]
         const gender = genderOptions[Math.floor(Math.random() * genderOptions.length)]
-        
+
         return {
             id: i + 1,
             name: `Run Crew ${i + 1}`,
@@ -59,7 +59,7 @@ const mockVoteData = [
         allowMultiple: false,
         isAnonymous: false,
         status: 'progress',
-        participants: [{ id: 999, name: '나(Me)', status: 'pending', votedAt: '2024-12-20 10:00:00.123' }] 
+        participants: [{ id: 999, name: '나(Me)', status: 'pending', votedAt: '2024-12-20 10:00:00.123' }]
     },
     {
         id: 2,
@@ -131,9 +131,9 @@ export default {
                     // Constants have specific formats like "서울 강남구". 
                     // Filter might pass "서울" (broad) or "서울 강남구" (specific).
                     if (['서울', '경기', '인천', '강원'].includes(params.region)) {
-                         filtered = filtered.filter(c => c.location.startsWith(params.region))
+                        filtered = filtered.filter(c => c.location.startsWith(params.region))
                     } else {
-                         filtered = filtered.filter(c => c.location === params.region)
+                        filtered = filtered.filter(c => c.location === params.region)
                     }
                 }
 
@@ -160,7 +160,7 @@ export default {
 
                 // 5. Age Filter
                 if (params.ages && params.ages.length > 0) {
-                     filtered = filtered.filter(c => params.ages.includes(c.ageRange))
+                    filtered = filtered.filter(c => params.ages.includes(c.ageRange))
                 }
 
                 // 6. Gender Filter
@@ -278,22 +278,7 @@ export default {
     },
 
     getMembers(crewId) {
-        return new Promise((resolve) => {
-            setTimeout(() => {
-                const roles = ['크루장', '매니저', '정회원']
-                const members = Array.from({ length: 20 }, (_, i) => ({
-                    id: i + 1,
-                    name: `Member ${i + 1}`,
-                    role: i === 0 ? '크루장' : (i < 3 ? '매니저' : '정회원'),
-                    attendance: `${Math.floor(Math.random() * 10)}/10`,
-                    distance: `${Math.floor(Math.random() * 100)}km`,
-                    pace: `${Math.floor(Math.random() * 4) + 4}:${Math.floor(Math.random() * 60).toString().padStart(2, '0')}`,
-                    joinDate: '2024-01-15',
-                    image: `https://picsum.photos/seed/mem${i}/50/50`
-                }))
-                resolve({ data: members })
-            }, 500)
-        })
+        return api.get(`/api/v1/crew/${crewId}/members`)
     },
 
     updateMemberRole(crewId, memberId, role) {
@@ -742,20 +727,20 @@ export default {
                     status: 'progress',
                     participants: [],
                     options: voteData.options.map((opt, text) => ({ // Assuming voteData.options is array of strings
-                         id: Date.now() + Math.random(),
-                         text: opt,
-                         voters: []
+                        id: Date.now() + Math.random(),
+                        text: opt,
+                        voters: []
                     }))
                 }
                 // Handle formatting options if they come as strings
                 if (typeof voteData.options[0] === 'string') {
-                     newVote.options = voteData.options.map((text, idx) => ({
-                         id: idx + 1,
-                         text: text,
-                         voters: []
-                     }))
+                    newVote.options = voteData.options.map((text, idx) => ({
+                        id: idx + 1,
+                        text: text,
+                        voters: []
+                    }))
                 }
-                
+
                 mockVoteData.unshift(newVote) // Add to beginning
                 resolve({
                     success: true,
@@ -778,12 +763,12 @@ export default {
 
     updateVoteStatus(crewId, voteId, status) {
         return new Promise((resolve) => {
-             setTimeout(() => {
+            setTimeout(() => {
                 console.log(`Updating vote ${voteId} status to ${status}`)
                 const vote = mockVoteData.find(v => v.id === voteId)
                 if (vote) vote.status = status
                 resolve({ success: true })
-             }, 500)
+            }, 500)
         })
     },
 

@@ -51,7 +51,7 @@ export const useCrewStore = defineStore('crew', {
             this.loading = true
             try {
                 const res = await crewApi.getMembers(crewId)
-                this.members = res.data
+                this.members = res.data.data
             } finally {
                 this.loading = false
             }
