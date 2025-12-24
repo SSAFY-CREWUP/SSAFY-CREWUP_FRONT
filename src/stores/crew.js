@@ -12,6 +12,7 @@ export const useCrewStore = defineStore('crew', {
         withdrawnMembers: [],
         notifications: [],
         unreadCount: 0,
+        myCrews: [],
         loading: false
     }),
     actions: {
@@ -214,6 +215,10 @@ export const useCrewStore = defineStore('crew', {
         async confirmParticipant(crewId, voteId, userId) {
             await crewApi.confirmParticipant(crewId, voteId, userId)
         },
+        async getVoteResults(voteId) {
+            const res = await crewApi.getVoteResults(voteId)
+            return res
+        },
         async createVote(crewId, voteData) {
             try {
                 await crewApi.createVote(crewId, voteData)
@@ -240,6 +245,17 @@ export const useCrewStore = defineStore('crew', {
             console.log('Deleting notification:', notificationId)
             await crewApi.deleteNotification(notificationId)
             this.notifications = this.notifications.filter(n => n.id !== notificationId)
-        }
+        },
+        async fetchMyCrews() {
+            try {
+                const res = await crewApi.getMyCrews()
+                this.myCrews = res.data
+            } catch (error) {
+                console.error('Failed to fetch my crews:', error)
+            }
+        },
+        async closeVote(crewId, voteId) {
+            await crewApi.closeVote(crewId, voteId)
+        },
     }
 })

@@ -3,6 +3,7 @@ import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Plus, EditPen } from '@element-plus/icons-vue'
+import crewApi from '@/api/crew'
 
 import { REGIONS, ACTIVITY_TIMES, MEMBER_AGES, GENDER_LIMITS } from '@/constants/crew'
 
@@ -17,6 +18,7 @@ const form = reactive({
   genderLimit: '모두',
   description: '',
   image: null,
+  imageFile: null,
   mainActivities: ['', '', '', ''] // Array of 4 strings
 })
 
@@ -32,6 +34,7 @@ const loading = ref(false)
 
 const handleImageChange = (file) => {
   form.image = URL.createObjectURL(file.raw)
+  form.imageFile = file.raw
 }
 
 const handleSubmit = async () => {
@@ -42,8 +45,6 @@ const handleSubmit = async () => {
   }
 
   // Validate mainActivities (at least 1, max 30 chars each)
-  const validActivities = form.mainActivities.filter(a => a.trim().length > 0)
-  
   if (form.mainActivities.some(a => a.length > 30)) {
     ElMessage.warning('주요 활동 키워드는 각각 30자 이내로 작성해주세요.')
     return
@@ -51,12 +52,32 @@ const handleSubmit = async () => {
 
   loading.value = true
   try {
-    // Mock API call
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    const requestData = {
+      name: form.name,
+      region: form.region,
+      description: form.description,
+      activityTime: form.activityTime,
+      ageGroup: form.ageRange,
+      genderLimit: form.genderLimit,
+      keywords: form.mainActivities.filter(a => a.trim().length > 0)
+    }
+
+    const formData = new FormData()
+    // 1. Request Part (JSON)
+    const jsonBlob = new Blob([JSON.stringify(requestData)], { type: 'application/json' })
+    formData.append('request', jsonBlob)
+
+    // 2. Image Part (File)
+    if (form.imageFile) {
+      formData.append('crewImage', form.imageFile)
+    }
+
+    await crewApi.createCrew(formData)
     
     ElMessage.success('크루가 성공적으로 생성되었습니다!')
     router.push('/crews')
   } catch (error) {
+    console.error(error)
     ElMessage.error('크루 생성에 실패했습니다.')
   } finally {
     loading.value = false

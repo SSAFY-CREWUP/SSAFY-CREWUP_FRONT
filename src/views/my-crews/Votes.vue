@@ -95,11 +95,30 @@ const submitVote = async () => {
     }
 }
 
+const formatTime = (dateStr) => {
+    if (!dateStr) return ''
+    try {
+        const date = new Date(dateStr)
+        // Format to HH:mm:ss.SSS for concurrency visualization
+        const timePart = date.toTimeString().split(' ')[0] // HH:mm:ss
+        const msPart = date.getMilliseconds().toString().padStart(3, '0')
+        return `${timePart}.${msPart}`
+    } catch (e) {
+        return ''
+    }
+}
+
 // Result / Manage
-const openResult = (vote, manageMode = false) => {
-  selectedVote.value = JSON.parse(JSON.stringify(vote))
-  isManageMode.value = manageMode
-  showResultModal.value = true
+const openResult = async (vote, manageMode = false) => {
+  try {
+      const detailedVote = await crewStore.getVoteResults(vote.id)
+      selectedVote.value = detailedVote
+      isManageMode.value = manageMode
+      showResultModal.value = true
+  } catch (error) {
+      console.error(error)
+      alert('투표 결과를 불러오는데 실패했습니다.')
+  }
 }
 
 const handleConfirm = async (participant) => {
@@ -126,7 +145,7 @@ const handleCreateVote = async (voteData) => {
 const handleEndVote = async (vote) => {
     if (!confirm('투표를 종료하시겠습니까?')) return
     try {
-        await crewStore.updateVoteStatus(crewId, vote.id, 'closed')
+        await crewStore.closeVote(crewId, vote.id)
         alert('투표가 종료되었습니다.')
         fetchVotes()
     } catch (error) {
@@ -211,7 +230,7 @@ const handleDeleteVote = async (vote) => {
                 class="btn-manage end" 
                 @click="handleEndVote(vote)"
             >
-                투표종료
+              투표종료
             </button>
             <button class="btn-manage delete" @click="handleDeleteVote(vote)">
                 삭제
@@ -333,7 +352,7 @@ const handleDeleteVote = async (vote) => {
                      <div v-for="voter in opt.voters" :key="voter.id" class="voter-chip">
                          <img :src="voter.image" class="voter-img" />
                          <span class="voter-name">{{ voter.name }}</span>
-                         <span class="voter-time">{{ voter.votedAt.split(' ')[1] }}</span>
+                         <span class="voter-time">{{ formatTime(voter.votedAt) }}</span>
                      </div>
                  </div>
                  <div v-else class="anonymous-placeholder">
