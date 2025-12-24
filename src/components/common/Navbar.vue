@@ -20,6 +20,7 @@ const unreadNotifications = computed(() => crewStore.unreadCount)
 onMounted(() => {
   crewStore.fetchNotifications()
   crewStore.fetchUnreadCount()
+  crewStore.fetchMyCrews()
 })
 
 const handleCommand = async (command) => {
@@ -71,13 +72,13 @@ const handleViewAllNotifications = async () => {
           <span class="nav-link dropdown-link" :class="{ active: $route.path.startsWith('/crews/') && $route.params.id }">
             내 크루 <el-icon class="el-icon--right"><ArrowDown /></el-icon>
           </span>
-          <template #dropdown>
-            <el-dropdown-menu>
-              <el-dropdown-item :command="1">러닝 크루 A</el-dropdown-item>
-              <el-dropdown-item :command="2">새벽 달리기</el-dropdown-item>
-              <el-dropdown-item command="create">크루 만들기</el-dropdown-item>
-            </el-dropdown-menu>
-          </template>
+           <template #dropdown>
+             <el-dropdown-menu>
+               <el-dropdown-item v-if="crewStore.myCrews.length === 0" disabled>가입된 크루가 없습니다</el-dropdown-item>
+               <el-dropdown-item v-else v-for="crew in crewStore.myCrews" :key="crew.id" :command="crew.id">{{ crew.name }}</el-dropdown-item>
+               <el-dropdown-item divided command="create">크루 만들기</el-dropdown-item>
+             </el-dropdown-menu>
+           </template>
         </el-dropdown>
 
         <RouterLink to="/courses" class="nav-link" active-class="active">코스</RouterLink>

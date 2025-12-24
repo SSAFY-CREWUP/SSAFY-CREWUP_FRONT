@@ -1,6 +1,5 @@
 import axios from 'axios'
 import api from './axios'
-
 // Mock Data Generation
 const generateMockCrews = (count) => {
     // Import constants concepts here (mocking imports for simplicity in single file var scope if needed, but better to use raw strings matching constants)
@@ -16,7 +15,6 @@ const generateMockCrews = (count) => {
     ]
     const ageOptions = ['전연령', '1020', '2030', '3040', '4050']
     const genderOptions = ['모두', '남성', '여성']
-
     return Array.from({ length: count }, (_, i) => {
         const age = ageOptions[Math.floor(Math.random() * ageOptions.length)]
         const gender = genderOptions[Math.floor(Math.random() * genderOptions.length)]
@@ -35,15 +33,12 @@ const generateMockCrews = (count) => {
         }
     })
 }
-
 const allCrews = generateMockCrews(60)
-
 // Helper to convert pace string "5:30" to float 5.5
 const parsePace = (paceStr) => {
     const [min, sec] = paceStr.split(':').map(Number)
     return min + (sec / 60)
 }
-
 // Advanced Vote Mock Data
 const mockVoteData = [
     {
@@ -109,138 +104,95 @@ const mockVoteData = [
         participants: []
     }
 ]
-
 export default {
     getCrews(params) {
-        return new Promise((resolve) => {
-            setTimeout(() => {
-                let filtered = [...allCrews]
-
-                // 1. Search (Name or Location)
-                if (params.search) {
-                    const query = params.search.toLowerCase()
-                    filtered = filtered.filter(c =>
-                        c.name.toLowerCase().includes(query) ||
-                        c.location.includes(query)
-                    )
+        const qp = {
+            search: params.search,
+            region: params.region === '전체' ? undefined : params.region,
+            activityTimes: params.times, // times array
+            genderLimits: params.genders, // genders array
+            ageGroups: params.ages, // ages array
+            minPace: params.paceRange ? params.paceRange[0] : undefined,
+            maxPace: params.paceRange ? params.paceRange[1] : undefined,
+            sort: params.sortBy === 'latest' ? 'CREATED_AT' : 
+                   (params.sortBy === 'popular' ? 'MEMBER_COUNT' : 
+                   (params.sortBy === 'pace' ? 'AVERAGE_PACE' : undefined)),
+            order: params.sortDirection ? params.sortDirection.toUpperCase() : undefined,
+            page: params.page,
+            size: params.size
+        }
+        
+        // Remove undefined keys
+        Object.keys(qp).forEach(key => qp[key] === undefined && delete qp[key])
+        // Serialize arrays nicely (axios does this by default usually as key[], check if backend needs repeated keys)
+        // Spring accepts 'activityTimes=A&activityTimes=B'.
+        // Axios serializes array as 'activityTimes[]=A&activityTimes[]=B' by default? 
+        // We need 'indexes: null' for qs logic or use paramsSerializer if standard spring binding.
+        // Let's rely on standard axios for now, usually Spring MVC handles repeated params well.
+        return api.get('/api/v1/crew/search', {
+            params: qp,
+            paramsSerializer: {
+                indexes: null // Result: activityTimes=A&activityTimes=B
+            }
+        }).then(response => {
+            // Backend currently returns List, not Page. Adapt to frontend expectation.
+            const list = response.data.data || []
+            const mappedList = list.map(item => ({
+                id: item.crewId,
+                name: item.name,
+                location: item.region,
+                members: item.memberCount,
+                image: item.crewImage,
+                activityTime: item.activityTime,
+                pace: (item.averagePace !== null && item.averagePace !== undefined) ? `${item.averagePace}` : 'N/A', // Format as string if needed, or component handles number
+                memberInfo: item.ageGroup ? `${item.ageGroup}` : '모집중'
+            }))
+            return {
+                data: {
+                    content: mappedList,
+                    last: true, // Backend returns all matches for now
+                    totalElements: list.length,
+                    totalPages: 1
                 }
-
-                // 2. Region Filter
-                if (params.region && params.region !== '전체') {
-                    // Check if specific region (full match) or broad region (startswith)
-                    // Constants have specific formats like "서울 강남구". 
-                    // Filter might pass "서울" (broad) or "서울 강남구" (specific).
-                    if (['서울', '경기', '인천', '강원'].includes(params.region)) {
-                        filtered = filtered.filter(c => c.location.startsWith(params.region))
-                    } else {
-                        filtered = filtered.filter(c => c.location === params.region)
-                    }
-                }
-
-                // 3. Pace Range Filter
-                if (params.paceRange && params.paceRange.length === 2) {
-                    const [min, max] = params.paceRange
-                    filtered = filtered.filter(c => {
-                        const val = parsePace(c.pace)
-                        return val >= min && val <= max
-                    })
-                }
-
-                // 4. Activity Time Filter (Checkbox array)
-                if (params.times && params.times.length > 0) {
-                    filtered = filtered.filter(c => {
-                        // Check if crew's time is in the selected list
-                        // Crew time format: "오전 (06:00 ~ 12:00)"
-                        // Filter param: ["오전", "저녁"] (simplified keys?)
-                        // Let's assume params.times sends full strings or keywords.
-                        // Ideally checking substring inclusion:
-                        return params.times.some(t => c.activityTime.includes(t))
-                    })
-                }
-
-                // 5. Age Filter
-                if (params.ages && params.ages.length > 0) {
-                    filtered = filtered.filter(c => params.ages.includes(c.ageRange))
-                }
-
-                // 6. Gender Filter
-                if (params.genders && params.genders.length > 0) {
-                    filtered = filtered.filter(c => params.genders.includes(c.genderLimit))
-                }
-
-                // 7. Sorting
-                if (params.sortBy) {
-                    const direction = params.sortDirection === 'asc' ? 1 : -1
-                    filtered.sort((a, b) => {
-                        if (params.sortBy === 'latest') {
-                            return (b.id - a.id) * direction // ID-based proxy for "latest"
-                        } else if (params.sortBy === 'popular') {
-                            return (Number(a.members) - Number(b.members)) * direction
-                        } else if (params.sortBy === 'pace') {
-                            return (parsePace(a.pace) - parsePace(b.pace)) * direction
-                        }
-                        return 0
-                    })
-                }
-
-                // Pagination
-                const page = params.page || 1
-                const size = params.size || 12
-                const start = (page - 1) * size
-                const end = start + size
-                const paginated = filtered.slice(start, end)
-
-                resolve({
-                    data: {
-                        content: paginated,
-                        totalElements: filtered.length,
-                        totalPages: Math.ceil(filtered.length / size),
-                        last: end >= filtered.length
-                    }
-                })
-            }, 400)
+            }
         })
     },
     getCrew(id) {
-        return new Promise((resolve) => {
-            setTimeout(() => {
-                const crew = allCrews.find(c => c.id === parseInt(id)) || allCrews[0]
-                // Enhance mock data for detail view
-                const detailedCrew = {
-                    ...crew,
-                    rating: 4.8,
-                    reviewCount: 124,
-                    intro: '저희 크루는 "즐겁게 달리자"를 모토로 운영됩니다. 초보자부터 숙련자까지 모두 환영하며, 매주 다양한 코스에서 정기 러닝을 진행합니다. 함께 땀 흘리며 건강한 에너지를 나눠보세요!',
-                    activityTime: crew.activityTime || '평일 저녁',
-                    memberInfo: crew.memberInfo || '2030 / 혼성',
-                    activities: [
-                        '매주 화/목 저녁 8시 정기 러닝',
-                        '월 1회 주말 장거리 러닝 (LSD)',
-                        '분기별 마라톤 대회 단체 참가',
-                        '러닝 후 가벼운 뒤풀이 (선택)'
-                    ],
-                    previewMembers: [
-                        { id: 1, image: 'https://picsum.photos/seed/mem1/50/50' },
-                        { id: 2, image: 'https://picsum.photos/seed/mem2/50/50' },
-                        { id: 3, image: 'https://picsum.photos/seed/mem3/50/50' },
-                        { id: 4, image: 'https://picsum.photos/seed/mem4/50/50' },
-                        { id: 5, image: 'https://picsum.photos/seed/mem5/50/50' }
-                    ]
-                }
-                resolve({ data: detailedCrew })
-            }, 300)
+        return api.get(`/api/v1/crew/${id}`).then(response => {
+            const data = response.data.data
+            // Map backend response to frontend model
+            const mappedData = {
+                id: data.crewId,
+                name: data.name,
+                image: data.crewImage,
+                location: data.region,
+                members: data.memberCount,
+                activityTime: data.activityTime,
+                pace: (data.averagePace !== null && data.averagePace !== undefined) ? `${data.averagePace}` : 'N/A',
+                ageRange: data.ageGroup ? `${data.ageGroup}` : '전연령',
+                genderLimit: data.genderLimit || '무관',
+                intro: data.description,
+                activities: data.keywords || [], // Map keywords to activities list
+                previewMembers: (data.members || []).map(m => ({
+                    id: m.userId,
+                    name: m.nickname,
+                    image: m.profileImage
+                }))
+            }
+            return { data: mappedData }
         })
     },
-
     joinCrew(crewId, data) {
-        return new Promise((resolve) => {
-            setTimeout(() => {
-                console.log(`Joining crew ${crewId} with data:`, data)
-                resolve({ success: true })
-            }, 1000)
+        // Backend does not use data (message) currently for join, only userId from session
+        return api.post(`/api/v1/crew/${crewId}/join`)
+    },
+    createCrew(data) {
+        return api.post('/api/v1/crew', data, {
+            headers: {
+                'Content-Type': undefined
+            }
         })
     },
-
     // Member Management API
     getRequests(crewId) {
         return new Promise((resolve) => {
@@ -260,7 +212,6 @@ export default {
             }, 500)
         })
     },
-
     approveRequest(crewId, requestId) {
         return new Promise((resolve) => {
             setTimeout(() => {
@@ -268,7 +219,6 @@ export default {
             }, 500)
         })
     },
-
     rejectRequest(crewId, requestId, reason) {
         return new Promise((resolve) => {
             setTimeout(() => {
@@ -276,11 +226,9 @@ export default {
             }, 500)
         })
     },
-
     getMembers(crewId) {
         return api.get(`/api/v1/crew/${crewId}/members`)
     },
-
     updateMemberRole(crewId, memberId, role) {
         return new Promise((resolve) => {
             setTimeout(() => {
@@ -288,7 +236,6 @@ export default {
             }, 500)
         })
     },
-
     kickMember(crewId, memberId) {
         return new Promise((resolve) => {
             setTimeout(() => {
@@ -296,7 +243,6 @@ export default {
             }, 500)
         })
     },
-
     getWithdrawnMembers(crewId) {
         return new Promise((resolve) => {
             setTimeout(() => {
@@ -311,7 +257,6 @@ export default {
             }, 500)
         })
     },
-
     getDashboardData(crewId) {
         return new Promise((resolve) => {
             setTimeout(() => {
@@ -359,7 +304,6 @@ export default {
             }, 500)
         })
     },
-
     // Board API
     getPosts(crewId, params) {
         return new Promise((resolve) => {
@@ -379,26 +323,21 @@ export default {
                         comments: Math.floor(Math.random() * 20)
                     }
                 })
-
                 let filtered = [...posts]
-
                 // Filter by Category
                 if (params.category && params.category !== '전체') {
                     filtered = filtered.filter(p => p.category === params.category)
                 }
-
                 // Filter by Search (Title)
                 if (params.search) {
                     filtered = filtered.filter(p => p.title.toLowerCase().includes(params.search.toLowerCase()))
                 }
-
                 // Pagination
                 const page = params.page || 1
                 const size = params.size || 10
                 const start = (page - 1) * size
                 const end = start + size
                 const paginated = filtered.slice(start, end)
-
                 resolve({
                     data: paginated,
                     total: filtered.length
@@ -406,7 +345,6 @@ export default {
             }, 500)
         })
     },
-
     getPost(crewId, postId) {
         return new Promise((resolve) => {
             setTimeout(() => {
@@ -425,7 +363,6 @@ export default {
             }, 300)
         })
     },
-
     createPost(crewId, postData) {
         return new Promise((resolve) => {
             setTimeout(() => {
@@ -434,7 +371,6 @@ export default {
             }, 500)
         })
     },
-
     getComments(crewId, postId) {
         return new Promise((resolve) => {
             setTimeout(() => {
@@ -449,7 +385,6 @@ export default {
             }, 300)
         })
     },
-
     addComment(crewId, postId, commentData) {
         return new Promise((resolve) => {
             setTimeout(() => {
@@ -467,14 +402,12 @@ export default {
             }, 300)
         })
     },
-
     // Schedule API
     getEvents(crewId) {
         return new Promise((resolve) => {
             setTimeout(() => {
                 const today = new Date()
                 const formatDate = (date) => date.toISOString().split('T')[0]
-
                 const events = [
                     {
                         id: 1,
@@ -514,7 +447,6 @@ export default {
             }, 500)
         })
     },
-
     addEvent(crewId, eventData) {
         return new Promise((resolve) => {
             setTimeout(() => {
@@ -530,7 +462,6 @@ export default {
             }, 500)
         })
     },
-
     deleteEvent(crewId, eventId) {
         return new Promise((resolve) => {
             setTimeout(() => {
@@ -539,7 +470,6 @@ export default {
             }, 500)
         })
     },
-
     joinEvent(crewId, eventId) {
         return new Promise((resolve) => {
             setTimeout(() => {
@@ -548,7 +478,6 @@ export default {
             }, 500)
         })
     },
-
     cancelJoinEvent(crewId, eventId) {
         return new Promise((resolve) => {
             setTimeout(() => {
@@ -557,7 +486,6 @@ export default {
             }, 500)
         })
     },
-
     updateEventParticipantStatus(crewId, eventId, participantId, status) {
         return new Promise((resolve) => {
             setTimeout(() => {
@@ -566,7 +494,6 @@ export default {
             }, 500)
         })
     },
-
     confirmEvent(crewId, eventId) {
         return new Promise((resolve) => {
             setTimeout(() => {
@@ -575,7 +502,6 @@ export default {
             }, 500)
         })
     },
-
     completeEvent(crewId, eventId) {
         return new Promise((resolve) => {
             setTimeout(() => {
@@ -584,7 +510,6 @@ export default {
             }, 500)
         })
     },
-
     // Courses API
     getCrewCourses(crewId, params = {}) {
         return new Promise((resolve) => {
@@ -597,12 +522,10 @@ export default {
                     difficulty: ['Easy', 'Medium', 'Hard'][Math.floor(Math.random() * 3)],
                     image: `https://picsum.photos/seed/course${i}/300/200`
                 }))
-
                 // Filter by Difficulty
                 if (params.difficulty && params.difficulty !== '전체') {
                     courses = courses.filter(c => c.difficulty === params.difficulty)
                 }
-
                 // Sort
                 if (params.sort) {
                     if (params.sort === 'distance') {
@@ -611,12 +534,10 @@ export default {
                         courses.sort((a, b) => a.title.localeCompare(b.title))
                     }
                 }
-
                 resolve({ data: courses })
             }, 500)
         })
     },
-
     getCrewCourseDetail(crewId, courseId) {
         return new Promise((resolve) => {
             setTimeout(() => {
@@ -642,7 +563,6 @@ export default {
             }, 500)
         })
     },
-
     getScrappedCourses(crewId) {
         return new Promise((resolve) => {
             setTimeout(() => {
@@ -656,53 +576,61 @@ export default {
             }, 500)
         })
     },
-
-
+    // Votes API
     // Votes API
     getVotes(crewId) {
-        return new Promise((resolve) => {
-            setTimeout(() => {
-                resolve({ data: [...mockVoteData] })
-            }, 500)
+        return api.get(`/api/v1/crew/${crewId}/votes`).then(response => {
+            const data = response.data.data
+            // Merge active and ended votes, map to frontend format
+            const active = (data.activeVotes || []).map(v => ({...v, status: 'progress'}))
+            const ended = (data.endedVotes || []).map(v => ({...v, status: 'closed'}))
+            const merged = [...active, ...ended].map(v => ({
+                id: v.voteId,
+                title: v.title,
+                endDate: v.endAt ? v.endAt.split('T')[0] : '', // Adjust format
+                limitCount: v.limitCount || 100, // Keep mapped for backup if needed
+                maxParticipants: v.limitCount || 100,
+                status: v.status || (v.isClosed ? 'closed' : 'progress'),
+                // For preview details, we might need to fetch individual, but list displays minimal info
+                hasVoted: v.hasVoted, // Map hasVoted from backend
+                participants: Array(v.participantCount || 0).fill({}), 
+                allowMultiple: v.multipleChoice || false,
+                isAnonymous: v.isAnonymous || false,
+                options: (v.options || []).map(o => ({
+                    id: o.optionId,
+                    text: o.content,
+                    voters: [] // Initialize empty voters for now
+                }))
+            }))
+            // Note: Frontend specific logic might need detailed data for each card. 
+            // If component renders full vote details, we might need to fetch results for each or update backend list DTO.
+            // For now, return basic mapped list.
+            return { data: merged }
         })
     },
-
+    getVoteResults(voteId) {
+         return api.get(`/api/v1/vote/${voteId}/results`).then(response => {
+             const data = response.data.data
+             return {
+                 id: data.voteId,
+                 title: data.title,
+                 isAnonymous: data.isAnonymous,
+                 allowMultiple: false, // Not in result response? check backend
+                 options: data.options.map(opt => ({
+                     id: opt.optionId,
+                     text: opt.content,
+                     voters: (opt.voters || []).map(v => ({
+                        name: v.nickname,
+                        image: v.profileImage, // Handle if null?
+                        votedAt: v.votedAt
+                     }))
+                 }))
+             }
+         })
+    },
     castVote(crewId, voteId, selectedOptionIds) {
-        return new Promise((resolve) => {
-            setTimeout(() => {
-                console.log(`Casting vote for ${voteId} in crew ${crewId} with options:`, selectedOptionIds)
-                const vote = mockVoteData.find(v => v.id === voteId)
-                if (vote) {
-                    // Update options
-                    vote.options.forEach(opt => {
-                        if (selectedOptionIds.includes(opt.id)) {
-                            // Check if already voted for this option to prevent duplicate (though UI should handle)
-                            if (!opt.voters.find(v => v.id === 999)) {
-                                opt.voters.push({
-                                    id: 999, // Fixed ID for current user
-                                    name: '나(Me)',
-                                    image: 'https://picsum.photos/seed/me/50/50',
-                                    votedAt: new Date().toISOString().replace('T', ' ').replace('Z', '') // Full precision
-                                })
-                            }
-                        }
-                    })
-
-                    // Add to main participants list if not exists
-                    if (!vote.participants.find(p => p.id === 999)) {
-                        vote.participants.push({
-                            id: 999,
-                            name: '나(Me)',
-                            status: 'pending',
-                            votedAt: new Date().toISOString().replace('T', ' ').replace('Z', '')
-                        })
-                    }
-                }
-                resolve({ success: true })
-            }, 500)
-        })
+        return api.post(`/api/v1/vote/${voteId}/cast`, { optionIds: selectedOptionIds })
     },
-
     confirmParticipant(crewId, voteId, userId) {
         return new Promise((resolve) => {
             setTimeout(() => {
@@ -716,41 +644,20 @@ export default {
             }, 500)
         })
     },
-
     createVote(crewId, voteData) {
-        return new Promise((resolve) => {
-            setTimeout(() => {
-                console.log(`Creating vote in crew ${crewId}:`, voteData)
-                const newVote = {
-                    id: Date.now(),
-                    ...voteData,
-                    status: 'progress',
-                    participants: [],
-                    options: voteData.options.map((opt, text) => ({ // Assuming voteData.options is array of strings
-                        id: Date.now() + Math.random(),
-                        text: opt,
-                        voters: []
-                    }))
-                }
-                // Handle formatting options if they come as strings
-                if (typeof voteData.options[0] === 'string') {
-                    newVote.options = voteData.options.map((text, idx) => ({
-                        id: idx + 1,
-                        text: text,
-                        voters: []
-                    }))
-                }
-
-                mockVoteData.unshift(newVote) // Add to beginning
-                resolve({
-                    success: true,
-                    data: newVote
-                })
-            }, 500)
+        return api.post(`/api/v1/crew/${crewId}/votes`, {
+            title: voteData.title,
+            endAt: `${voteData.endDate}T23:59:59`, // Default to end of day
+            multipleChoice: voteData.allowMultiple,
+            isAnonymous: voteData.isAnonymous,
+            limitCount: voteData.maxParticipants,
+            options: voteData.options // Expecting array of strings
         })
     },
-
     deleteVote(crewId, voteId) {
+        // Backend API for deleting vote not explicitly checked, assuming strictly implementing what was asked.
+        // If no backend endpoint found for delete, keep mock or leave as is.
+        // Keeping mock for delete/updateStatus as they weren't primary scope or I didn't see explicit Delete controller method in previous views.
         return new Promise((resolve) => {
             setTimeout(() => {
                 console.log(`Deleting vote ${voteId} in crew ${crewId}`)
@@ -760,19 +667,9 @@ export default {
             }, 500)
         })
     },
-
-    updateVoteStatus(crewId, voteId, status) {
-        return new Promise((resolve) => {
-            setTimeout(() => {
-                console.log(`Updating vote ${voteId} status to ${status}`)
-                const vote = mockVoteData.find(v => v.id === voteId)
-                if (vote) vote.status = status
-                resolve({ success: true })
-            }, 500)
-        })
+    closeVote(crewId, voteId) {
+        return api.post(`/api/v1/vote/${voteId}/close`)
     },
-
-    // Notifications API
     // Notifications API
     getNotifications() {
         return api.get('/api/v1/notification/list')
@@ -785,8 +682,18 @@ export default {
     },
     deleteNotification(notificationId) {
         return api.delete(`/api/v1/notification/${notificationId}`)
+    },
+    getMyCrews() {
+        return api.get('/api/v1/crew/my').then(response => {
+            const list = response.data.data || []
+            // Map to simplified structure for dropdown
+            return {
+                data: list.map(item => ({
+                    id: item.crewId,
+                    name: item.name,
+                    image: item.crewImage
+                }))
+            }
+        })
     }
 }
-
-
-

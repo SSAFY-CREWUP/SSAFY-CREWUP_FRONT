@@ -45,6 +45,8 @@ const filteredVotes = computed(() => {
   return votes.value.filter(v => v.status === activeTab.value)
 })
 
+import { ElMessage, ElMessageBox } from 'element-plus'
+
 const getMyVoteStatus = (vote) => {
     // Check if user is in main participants list
     const p = vote.participants?.find(p => p.id === currentUserId)
@@ -53,7 +55,7 @@ const getMyVoteStatus = (vote) => {
 }
 
 const hasVoted = (vote) => {
-    return !!getMyVoteStatus(vote)
+    return vote.hasVoted
 }
 
 const getStatusText = (status) => {
@@ -66,6 +68,10 @@ const getStatusColor = (status) => {
 
 // Open Voting Modal
 const openVoteModal = (vote) => {
+    if (vote.hasVoted) {
+        ElMessage.warning('이미 참여한 투표입니다.')
+        return
+    }
     selectedVote.value = vote
     selectedOptionIds.value = []
     showVoteModal.value = true
@@ -73,7 +79,7 @@ const openVoteModal = (vote) => {
 
 const submitVote = async () => {
     if (selectedOptionIds.value.length === 0) {
-        alert('항목을 선택해주세요.')
+        ElMessage.warning('항목을 선택해주세요.')
         return
     }
     
@@ -87,61 +93,100 @@ const submitVote = async () => {
 
     try {
         await crewStore.castVote(crewId, selectedVote.value.id, finalIds)
-        alert('투표가 완료되었습니다.')
+        ElMessage.success('투표가 완료되었습니다.')
         showVoteModal.value = false
         fetchVotes()
     } catch (error) {
-        alert('투표에 실패했습니다.')
+        console.error(error)
+        // Backend returns 500 for duplicate entry if exception is unhandled
+        // Treat 500 as potential duplicate vote for now since backend code is inaccessible
+        if (error.response?.status === 409 || error.response?.status === 500 || error.response?.data?.code === 'VOTE_ALREADY_DONE') {
+             ElMessage.warning('이미 참여한 투표입니다.')
+        } else {
+             ElMessage.error('투표에 실패했습니다.')
+        }
+    }
+}
+
+const formatTime = (dateStr) => {
+    if (!dateStr) return ''
+    try {
+        const date = new Date(dateStr)
+        const timePart = date.toTimeString().split(' ')[0]
+        const msPart = date.getMilliseconds().toString().padStart(3, '0')
+        return `${timePart}.${msPart}`
+    } catch (e) {
+        return ''
     }
 }
 
 // Result / Manage
-const openResult = (vote, manageMode = false) => {
-  selectedVote.value = JSON.parse(JSON.stringify(vote))
-  isManageMode.value = manageMode
-  showResultModal.value = true
+const openResult = async (vote, manageMode = false) => {
+  try {
+      const detailedVote = await crewStore.getVoteResults(vote.id)
+      selectedVote.value = detailedVote
+      isManageMode.value = manageMode
+      showResultModal.value = true
+  } catch (error) {
+      console.error(error)
+      ElMessage.error('투표 결과를 불러오는데 실패했습니다.')
+  }
 }
 
 const handleConfirm = async (participant) => {
-  if (!confirm(`${participant.name}님을 확정하시겠습니까?`)) return
   try {
+    await ElMessageBox.confirm(`${participant.name}님을 확정하시겠습니까?`, '참여 확정', {
+        confirmButtonText: '확정',
+        cancelButtonText: '취소',
+        type: 'info',
+    })
+    
     await crewStore.confirmParticipant(crewId, selectedVote.value.id, participant.id)
     participant.status = 'approved'
-    fetchVotes() // Refresh background
+    fetchVotes() 
+    ElMessage.success('확정되었습니다.')
   } catch (error) {
-    alert('확정에 실패했습니다.')
+    if (error !== 'cancel') ElMessage.error('확정에 실패했습니다.')
   }
 }
 
 const handleCreateVote = async (voteData) => {
   try {
     await crewStore.createVote(crewId, voteData)
-    alert('투표가 생성되었습니다.')
+    ElMessage.success('투표가 생성되었습니다.')
     fetchVotes()
   } catch (error) {
-    alert('투표 생성에 실패했습니다.')
+    ElMessage.error('투표 생성에 실패했습니다.')
   }
 }
 
 const handleEndVote = async (vote) => {
-    if (!confirm('투표를 종료하시겠습니까?')) return
     try {
-        await crewStore.updateVoteStatus(crewId, vote.id, 'closed')
-        alert('투표가 종료되었습니다.')
+        await ElMessageBox.confirm('투표를 종료하시겠습니까?', '투표 종료', {
+            confirmButtonText: '종료',
+            cancelButtonText: '취소',
+            type: 'warning',
+        })
+        await crewStore.closeVote(crewId, vote.id)
+        ElMessage.success('투표가 종료되었습니다.')
         fetchVotes()
     } catch (error) {
-        alert('투표 종료에 실패했습니다.')
+         if (error !== 'cancel') ElMessage.error('투표 종료에 실패했습니다.')
     }
 }
 
 const handleDeleteVote = async (vote) => {
-    if (!confirm('투표를 삭제하시겠습니까? 복구할 수 없습니다.')) return
     try {
+        await ElMessageBox.confirm('투표를 삭제하시겠습니까? 복구할 수 없습니다.', '투표 삭제', {
+            confirmButtonText: '삭제',
+            cancelButtonText: '취소',
+            type: 'warning',
+        })
         await crewStore.deleteVote(crewId, vote.id)
-        alert('투표가 삭제되었습니다.')
+        ElMessage.success('투표가 삭제되었습니다.')
         fetchVotes()
     } catch (error) {
-        alert('투표 삭제에 실패했습니다.')
+         if (error !== 'cancel') ElMessage.error('투표 삭제에 실패했습니다.')
     }
 }
 </script>
@@ -211,7 +256,7 @@ const handleDeleteVote = async (vote) => {
                 class="btn-manage end" 
                 @click="handleEndVote(vote)"
             >
-                투표종료
+              투표종료
             </button>
             <button class="btn-manage delete" @click="handleDeleteVote(vote)">
                 삭제
@@ -333,7 +378,7 @@ const handleDeleteVote = async (vote) => {
                      <div v-for="voter in opt.voters" :key="voter.id" class="voter-chip">
                          <img :src="voter.image" class="voter-img" />
                          <span class="voter-name">{{ voter.name }}</span>
-                         <span class="voter-time">{{ voter.votedAt.split(' ')[1] }}</span>
+                         <span class="voter-time">{{ formatTime(voter.votedAt) }}</span>
                      </div>
                  </div>
                  <div v-else class="anonymous-placeholder">
