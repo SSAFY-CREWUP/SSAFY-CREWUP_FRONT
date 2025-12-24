@@ -10,8 +10,13 @@ const route = useRoute()
 const courseStore = useCourseStore()
 
 // Enable drawing mode by default
-onMounted(() => {
-    courseStore.startDrawing()
+onMounted(async () => {
+    if (route.query.edit) {
+        await courseStore.fetchCourseDetailAction(route.query.edit)
+    } else {
+        courseStore.resetCourse()
+        courseStore.startDrawing()
+    }
 })
 
 // Mobile Tab State

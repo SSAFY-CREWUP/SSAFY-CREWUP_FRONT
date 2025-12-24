@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { Plus, MapLocation, Filter, Sort, Refresh, Search, Star, StarFilled, View, Clock } from '@element-plus/icons-vue'
 import CourseDetailModal from '../../components/course/CourseDetailModal.vue'
 import { useKakaoMap } from '../../composables/useKakaoMap'
+import courseApi from '../../api/course' // Import real API
 
 const router = useRouter()
 const { loadKakaoMap } = useKakaoMap()
@@ -20,7 +21,9 @@ const selectedCourse = ref(null)
 // Map State
 const mapContainer = ref(null)
 let map = null
+let clusterer = null
 let markers = []
+let overlays = [] // Keep track of overlays to close them
 const showSearchButton = ref(false)
 
 // Interaction State
@@ -31,161 +34,90 @@ const setItemRef = (el, id) => {
   if (el) itemRefs.value[id] = el
 }
 
-// Dummy Data matching CourseListResponse DTO
-const courses = ref([
-  {
-    courseId: 1,
-    title: '서울 시청 주변 러닝',
-    thumbnail: 'https://images.unsplash.com/photo-1536257104079-aa99c6460a5a?w=400&h=300&fit=crop',
-    distance: 3500, // meters
-    expectedTime: 20, // minutes
-    difficulty: 'EASY',
-    scrapCount: 42,
-    viewCount: 1240,
-    mainPointWkt: 'POINT(126.9786567 37.566826)',
-    // Detail Data
-    rating: 4.8,
-    description: '서울 시청 광장에서 시작하여 광화문을 돌아오는 도심 속 러닝 코스입니다. 점심시간이나 퇴근 후 가볍게 뛰기 좋습니다.',
-    aiSummary: '이 코스는 도심 접근성이 뛰어나며 평탄한 지형 덕분에 초보 러너들에게 인기가 많습니다. 특히 야간의 도시 조명이 아름다워 야경 명소로도 꼽힙니다. 다만 퇴근 시간대에는 인파가 다소 몰릴 수 있다는 점이 언급되었습니다.',
-    sentiment: { positive: ['상쾌함', '평지', '야경'], negative: ['사람많음'] },
-    reviews: [
-      { id: 1, user: 'Runnerkiwi', rating: 5, date: '2023-10-12', content: '퇴근하고 뛰기 딱 좋아요. 사람 좀 많긴 함.', image: null },
-      { id: 2, user: 'Marathoner', rating: 4, date: '2023-10-10', content: '가볍게 뛰기 좋습니다.', image: 'https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?w=200&fit=crop' }
-    ],
-    path: [
-      { lat: 37.5668, lng: 126.9786 }, { lat: 37.5678, lng: 126.9790 }, { lat: 37.5685, lng: 126.9800 }, { lat: 37.5692, lng: 126.9850 }
-    ]
-  },
-  {
-    courseId: 2,
-    title: '청계천 야간 러닝',
-    thumbnail: 'https://images.unsplash.com/photo-1551632811-561732d1e306?w=400&h=300&fit=crop',
-    distance: 5000,
-    expectedTime: 35,
-    difficulty: 'NORMAL',
-    scrapCount: 15,
-    viewCount: 856,
-    mainPointWkt: 'POINT(126.9850 37.5692)',
-    rating: 4.5,
-    description: '청계천 물길을 따라 달리는 시원한 코스입니다. 여름철 야간 러닝에 제격입니다.',
-    aiSummary: '물소리를 들으며 달릴 수 있어 심리적인 안정감을 주는 코스입니다. 주로 여름 밤에 이용자가 많으며 시원하다는 평이 주를 이룹니다. 벌레가 다소 많다는 점은 유의해야 합니다.',
-    sentiment: { positive: ['시원함', '물소리'], negative: ['벌레'] },
-    reviews: [
-       { id: 3, user: 'NightRun', rating: 5, date: '2023-09-20', content: '시원하고 좋아요!', image: null }
-    ],
-    path: [
-      { lat: 37.5692, lng: 126.9850 }, { lat: 37.5700, lng: 126.9900 }, { lat: 37.5710, lng: 127.0000 }
-    ]
-  },
-  {
-    courseId: 3,
-    title: '남산 둘레길 코스',
-    thumbnail: 'https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=400&h=300&fit=crop',
-    distance: 7200,
-    expectedTime: 50,
-    difficulty: 'HARD',
-    scrapCount: 88,
-    viewCount: 2150,
-    mainPointWkt: 'POINT(126.988227 37.551169)',
-    rating: 4.9,
-    description: '남산 둘레길을 크게 도는 중급자 코스입니다. 업힐과 다운힐이 적절히 섞여 있어 훈련용으로 추천합니다.',
-    aiSummary: '남산의 맑은 공기와 수려한 경치를 즐길 수 있어 만족도가 매우 높은 코스입니다. 오르막 구간이 있어 운동 효과가 확실하다는 평이 많으며, 초보자에게는 다소 힘들 수 있습니다.',
-    sentiment: { positive: ['운동됨', '경치', '공기좋음'], negative: ['오르막', '힘듦'] },
-    reviews: [],
-    path: [
-      { lat: 37.5511, lng: 126.9882 }, { lat: 37.5530, lng: 126.9900 }, { lat: 37.5550, lng: 126.9920 }
-    ]
-  },
-  {
-    courseId: 4,
-    title: '광화문 광장 런',
-    thumbnail: 'https://images.unsplash.com/photo-1541625602330-2277a4c46182?w=400&h=300&fit=crop',
-    distance: 2100,
-    expectedTime: 15,
-    difficulty: 'EASY',
-    scrapCount: 12,
-    viewCount: 520,
-    mainPointWkt: 'POINT(126.9768 37.5714)',
-    rating: 4.2,
-    description: '새롭게 정비된 광화문 광장을 달리는 코스입니다. 넓은 보행로가 확보되어 있어 쾌적합니다.',
-    aiSummary: '탁 트인 개방감을 느낄 수 있으며 바닥 관리가 잘 되어 있어 안전하게 달릴 수 있습니다. 주변에 사진 찍기 좋은 스팟이 많으나, 그늘이 부족해 한낮에는 더울 수 있다는 의견이 있습니다.',
-    sentiment: { positive: ['넓음', '사진맛집'], negative: ['그늘없음'] },
-    reviews: [],
-    path: [
-       { lat: 37.5714, lng: 126.9768 }, { lat: 37.5730, lng: 126.9770 }, { lat: 37.5750, lng: 126.9780 }
-    ]
-  },
-  {
-    courseId: 5,
-    title: '덕수궁 돌담길',
-    thumbnail: 'https://images.unsplash.com/photo-1595188800169-dc349b819f39?w=400&h=300&fit=crop',
-    distance: 1500,
-    expectedTime: 10,
-    difficulty: 'EASY',
-    scrapCount: 156,
-    viewCount: 3200,
-    mainPointWkt: 'POINT(126.9750 37.5658)',
-    rating: 4.7,
-    description: '돌담길의 고즈넉한 분위기를 즐길 수 있는 짧은 산책 겸 러닝 코스입니다.',
-    aiSummary: '로맨틱한 분위기 덕분에 데이트 코스로도 인기가 높습니다. 길이는 짧지만 감성적인 사진을 남기기에 좋습니다. 다만 길이 좁은 구간이 있어 속도를 내기에는 적합하지 않습니다.',
-    sentiment: { positive: ['낭만', '데이트'], negative: ['좁음'] },
-    reviews: [],
-    path: [
-       { lat: 37.5658, lng: 126.9750 }, { lat: 37.5650, lng: 126.9740 }, { lat: 37.5640, lng: 126.9730 }
-    ]
-  }
-])
+// Course Data State
+const courses = ref([]) // Initialize as empty array
 
-const filteredCourses = computed(() => {
-  let result = courses.value
+const filteredCourses = computed(() => courses.value)
 
-  // 1. Filter by Name (Search)
-  if (searchQuery.value.trim()) {
-    const query = searchQuery.value.toLowerCase()
-    result = result.filter(c => c.title.toLowerCase().includes(query))
-  }
-
-  // 2. Filter by Difficulty
-  if (difficultyFilter.value !== 'ALL') {
-    result = result.filter(c => c.difficulty === difficultyFilter.value)
-  }
-
-  // 3. Sort
-  if (sortOrder.value === 'distance') {
-    result = [...result].sort((a, b) => a.distance - b.distance)
-  } else if (sortOrder.value === 'name') {
-    result = [...result].sort((a, b) => a.title.localeCompare(b.title))
-  } else if (sortOrder.value === 'popularity') {
-    result = [...result].sort((a, b) => b.viewCount - a.viewCount)
-  }
-
-  return result
+// Watch filters to trigger re-fetch (since backend handles filtering)
+watch([searchQuery, difficultyFilter, sortOrder], () => {
+  fetchCourses()
 })
 
 const fetchCourses = async () => {
   loading.value = true
-  await new Promise(r => setTimeout(r, 500))
-  loading.value = false
-  updateMarkers()
+  try {
+    const params = {
+      keyword: searchQuery.value, // 검색어 (Backend might use 'keyword' or 'query' - checking CourseSearchCondition)
+      difficulty: difficultyFilter.value !== 'ALL' ? difficultyFilter.value : null,
+      sort: sortOrder.value,
+      page: 0,
+      size: 20
+    }
+    
+    // Add coordinates if map is initialized
+    // Add coordinates and radius if map is initialized
+    if (map) {
+      const center = map.getCenter()
+      params.lat = center.getLat()
+      params.lng = center.getLng()
+      
+      // Calculate radius based on bounds (distance from center to corner)
+      const bounds = map.getBounds()
+      const ne = bounds.getNorthEast()
+      
+      // Approximate distance in meters (using spherical law of cosines or simple Euclidean for small distances)
+      // Or use Polyline to measure
+      const polyline = new window.kakao.maps.Polyline({
+        path: [center, ne]
+      })
+      params.radius = Math.round(polyline.getLength()) // Meters
+    } else {
+       // Fallback for initial load if map isn't ready (though we moved fetch after init)
+       // Optional: Default to Seoul City Hall
+       params.lat = 37.566826
+       params.lng = 126.9786567
+    }
+
+    // Remove null/empty params
+    if (!params.keyword) delete params.keyword
+    if (!params.difficulty) delete params.difficulty
+    
+    // Call API
+    const response = await courseApi.getCourseList(params)
+    courses.value = response.data.data // ApiResponseBody.data
+  } catch (error) {
+    console.error('Failed to fetch courses:', error)
+  } finally {
+    loading.value = false
+    updateMarkers() // Update map markers with new data
+  }
 }
 
 onMounted(async () => {
-  try {
-    await loadKakaoMap()
+  // Load Map First, then Fetch Data
+  loadKakaoMap().then(() => {
+    console.log('Kakao Map Loaded')
     initMap()
-  } catch (error) {
+    // Fetch courses exactly after map is ready to get center coords
+    fetchCourses() 
+  }).catch(error => {
     console.error('Failed to load Kakao Map:', error)
-  }
+    // Fallback fetch if map fails
+    fetchCourses()
+  })
 })
 
-// Helper to parse POINT(lng lat)
+// Helper to parse POINT(lat lng)
 const parseWktToLatLng = (wkt) => {
   if (!wkt) return null
   try {
     const match = wkt.match(/POINT\s*\(\s*([0-9.]+)\s+([0-9.]+)\s*\)/)
     if (match) {
-      const lng = parseFloat(match[1])
-      const lat = parseFloat(match[2])
+      // Backend seems to send POINT(lat lng) based on logs
+      const lat = parseFloat(match[1]) 
+      const lng = parseFloat(match[2])
+      
       // Use window.kakao safely
       if (window.kakao && window.kakao.maps) {
         return new window.kakao.maps.LatLng(lat, lng)
@@ -209,43 +141,266 @@ const initMap = () => {
   }
   map = new window.kakao.maps.Map(mapContainer.value, options)
 
-  // Map Event Listeners
-  window.kakao.maps.event.addListener(map, 'dragend', () => {
-    showSearchButton.value = true
+  // Initialize Clusterer
+  clusterer = new window.kakao.maps.MarkerClusterer({
+    map: map,
+    averageCenter: true,
+    minLevel: 6,
+    disableClickZoom: false // Allow zoom on click
   })
+
+  // Map Event Listeners
+  const onMapChange = () => {
+    showSearchButton.value = true
+  }
+
+  window.kakao.maps.event.addListener(map, 'dragend', onMapChange)
+  window.kakao.maps.event.addListener(map, 'zoom_changed', onMapChange)
 
   // Initial markers
   updateMarkers()
 }
 
+// Close all open overlays
+const closeAllOverlays = () => {
+  overlays.forEach(o => o.setMap(null))
+  overlays = []
+}
+
 const updateMarkers = () => {
   if (!map) return
 
-  // Clear existing markers
-  markers.forEach(marker => marker.setMap(null))
-  markers = []
+  // 0. Clear existing clusterer markers
+  if (clusterer) {
+    clusterer.clear()
+  }
 
-  // Add new markers based on FILTERED courses
+  markers = []
+  closeAllOverlays()
+
+  // 1. Group courses by location (lat,lng)
+  const locationGroups = new Map()
+
   filteredCourses.value.forEach(course => {
     const latLng = parseWktToLatLng(course.mainPointWkt)
     if (!latLng) return
     
-    const marker = new window.kakao.maps.Marker({
-      position: latLng,
-      map: map,
-      title: course.title,
-      clickable: true
-    })
-
-    // Click event for marker to highlight list item
-    window.kakao.maps.event.addListener(marker, 'click', () => {
-      handleMarkerClick(course)
-    })
-
-    marker.courseId = course.courseId
-    markers.push(marker)
+    // Key with high precision to detect exact overlaps
+    const key = `${latLng.getLat().toFixed(6)},${latLng.getLng().toFixed(6)}`
+    
+    if (!locationGroups.has(key)) {
+      locationGroups.set(key, {
+        latLng: latLng,
+        courses: []
+      })
+    }
+    locationGroups.get(key).courses.push(course)
   })
+
+  // 2. Create Markers for each group
+  locationGroups.forEach((group) => {
+    const isMultiple = group.courses.length > 1
+    const mainCourse = group.courses[0] // Representative course for single view or first in list
+    
+    // 3. Mark Presentation (Single vs Group)
+    let mapObject = null // Marker or CustomOverlay (for group pin)
+
+    if (isMultiple) {
+      // --- GROUP MARKER (Custom Overlay) ---
+      const groupMarkerContent = document.createElement('div')
+      groupMarkerContent.className = 'group-marker-pin'
+      groupMarkerContent.innerHTML = `<span class="count">${group.courses.length}</span>`
+      
+      // Style logic is in CSS, or inline here for simplicity
+      Object.assign(groupMarkerContent.style, {
+        background: '#3B82F6', // Blue
+        color: 'white',
+        width: '32px',
+        height: '32px',
+        borderRadius: '50%',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontWeight: 'bold',
+        fontSize: '14px',
+        boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
+        border: '2px solid white',
+        cursor: 'pointer',
+        position: 'relative',
+        top: '-15px' // Center anchor adjustment
+      })
+
+      // Create Overlay for the Pin itself
+      mapObject = new window.kakao.maps.CustomOverlay({
+        position: group.latLng,
+        content: groupMarkerContent,
+        map: map, // Add immediately
+        zIndex: 5
+      })
+
+      // We attach the Click Listener to the DOM element directly
+      groupMarkerContent.onclick = (e) => {
+        e.stopPropagation()
+        closeAllOverlays()
+        overlay.setMap(map) // Show the Info List Overlay
+        overlays.push(overlay)
+      }
+
+    } else {
+      // --- SINGLE MARKER (Standard) ---
+      mapObject = new window.kakao.maps.Marker({
+        position: group.latLng,
+        title: mainCourse.title,
+        clickable: true
+      })
+      mapObject.setMap(map)
+
+      // Click Listener
+      window.kakao.maps.event.addListener(mapObject, 'click', () => {
+        closeAllOverlays()
+        overlay.setMap(map)
+        overlays.push(overlay)
+        handleMarkerClick(mainCourse)
+      })
+    }
+
+    // Construct Info Overlay Content (List or Single Info)
+    const contentFn = () => {
+    // ... existing contentFn logic (no changes needed inside, just reuse)
+      const wrapper = document.createElement('div')
+      wrapper.className = 'custom-overlay-wrapper'
+      
+      if (isMultiple) {
+        // ... (Same List Logic)
+        const listContainer = document.createElement('div')
+        listContainer.className = 'custom-overlay list-overlay'
+        Object.assign(listContainer.style, {
+          background: 'white',
+          borderRadius: '8px',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+          border: '1px solid #ddd',
+          width: '220px',
+          maxHeight: '250px',
+          overflowY: 'auto',
+          overflowX: 'hidden'
+        })
+
+        // Prevent Map Zoom
+        listContainer.addEventListener('wheel', (e) => { e.stopPropagation() }, { passive: true })
+
+        // Header
+        const header = document.createElement('div')
+        Object.assign(header.style, {
+          padding: '10px 12px',
+          fontWeight: 'bold',
+          borderBottom: '1px solid #f0f0f0',
+          background: '#fafafa',
+          fontSize: '13px',
+          color: '#333',
+          position: 'sticky',
+          top: '0',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        })
+        header.innerHTML = `<span>📍 선택된 위치</span> <span style="background:#eee; padding:2px 6px; borderRadius:4px; font-size:11px;">${group.courses.length}개 코스</span>`
+        listContainer.appendChild(header)
+
+        // Items
+        group.courses.forEach(c => {
+          const item = document.createElement('div')
+          item.className = 'overlay-list-item'
+          Object.assign(item.style, {
+            padding: '10px 12px',
+            borderBottom: '1px solid #f0f0f0',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            transition: 'background 0.2s'
+          })
+          item.onmouseover = () => item.style.background = '#f9f9f9'
+          item.onmouseout = () => item.style.background = 'white'
+          
+          item.innerHTML = `
+             <div style="font-weight: 500; font-size: 13px; color:#333; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:140px;">${c.title}</div>
+             <div style="font-size: 11px; color: #888;">${formatDistance(c.distance)}</div>
+          `
+          item.onclick = (e) => {
+             e.stopPropagation() 
+             handleMarkerClick(c) 
+             openDetail(c)
+          }
+          listContainer.appendChild(item)
+        })
+        wrapper.appendChild(listContainer)
+      } else {
+        // ... (Same Single Logic)
+        wrapper.innerHTML = `
+          <div class="custom-overlay" style="padding: 10px; background: white; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.2); border: 1px solid #ddd; min-width: 150px;">
+            <div style="font-weight: bold; margin-bottom: 5px; color: #333;">${mainCourse.title}</div>
+            <div style="font-size: 12px; color: #666; display: flex; gap: 5px;">
+               <span style="color:${getDifficultyColor(mainCourse.difficulty)}; font-weight:600;">${mainCourse.difficulty}</span>
+               <span>|</span>
+               <span>${formatDistance(mainCourse.distance)}</span>
+            </div>
+          </div>
+        `
+      }
+      return wrapper
+    }
+
+    const overlayContent = contentFn()
+    
+    // The Info Window Overlay
+    const overlay = new window.kakao.maps.CustomOverlay({
+      content: overlayContent,
+      map: null,
+      position: group.latLng,
+      yAnchor: 1.5, // slightly higher
+      zIndex: 20
+    })
+
+    // Store reference
+    // If it's a CustomOverlay (Group), we store it. If Marker, we store it.
+    // We add a unifying 'setMap' interface or just use `markers` array differently?
+    // Clusterer expects MARKERS. CustomOverlay cannot be added to Clusterer directly easily.
+    // BUT since we are handling overlaps manually with 'locationGroups', do we strictly NEED Clusterer?
+    // User liked clustering ("Clusterer is good"), but if we group overlaps manually, 
+    // we only need Clusterer for *separate* groups that are close by.
+    // Fortunately, we can pass CustomOverlay to Clusterer? No.
+    // So for Group Pins (CustomOverlay), they won't cluster automatically with built-in clusterer.
+    // However, since we manually grouped exact overlaps, maybe that's enough for "Pins overlap" issue.
+    // If the user zooms out, `MarkerClusterer` handles *proximity* clustering.
+    // To support `MarkerClusterer` with Custom Views, we usually use `Marker` with custom image.
+    // But maintaining DOM elements is nicer.
+    // Let's stick to: Group Pin = CustomOverlay. 
+    // Note: This effectively removes them from the Kakao Clusterer management, 
+    // so they won't merge with *other* distant pins when zooming out.
+    // If we want both, we should create a transparent Marker at that position for the Clusterer, 
+    // and bind the Overlay visibility to it. But that's complex.
+    // Given the user said "List style is better for overlaps", manual grouping is the priority.
+    
+    // Let's add ONLY Single Markers to clusterer for now, or add invisible markers for groups?
+    // Simplest: Just render them. If they overlap with *other* groups, they just overlap.
+    
+    mapObject.courseId = mainCourse.courseId // Representative ID
+    mapObject.groupCourses = group.courses
+    mapObject.overlay = overlay
+    
+    markers.push(mapObject) // We track them
+  })
+
+  // Add only MARKERS to clusterer (CustomOverlay doesn't work with clusterer addMarkers directly)
+  // We will filter only Markers.
+  const validMarkers = markers.filter(m => m instanceof window.kakao.maps.Marker)
+  if (clusterer && validMarkers.length > 0) {
+    clusterer.addMarkers(validMarkers)
+  }
 }
+
+// Global handler not needed anymore as we attach onclick directly
+// window.exposedHandleItemClick = ...
 
 // Map Marker -> List Interaction
 const handleMarkerClick = (course) => {
@@ -268,30 +423,75 @@ const handleItemClick = (course) => {
   const latLng = parseWktToLatLng(course.mainPointWkt)
   if (map && latLng) {
     map.panTo(latLng)
+    
+    // Find marker that contains this course
+    const marker = markers.find(m => {
+        // m.groupCourses is array
+        return m.groupCourses && m.groupCourses.some(c => c.courseId === course.courseId)
+    })
+
+    if (marker && marker.overlay) {
+      closeAllOverlays()
+      marker.overlay.setMap(map)
+      overlays.push(marker.overlay)
+    }
   }
 }
+
 
 const handleSearchHere = () => {
   if (!map) return
   const center = map.getCenter()
   console.log(`Searching at Lat: ${center.getLat()}, Lng: ${center.getLng()}`)
+  // TODO: Add search by location to API if supported. For now, just re-fetch.
   fetchCourses()
   showSearchButton.value = false
 }
 
-const toggleScrap = (course) => {
-  if (course.isScrapped === undefined) course.isScrapped = false
-  
-  course.isScrapped = !course.isScrapped
-  if (course.isScrapped) {
-    course.scrapCount += 1
-  } else {
-    course.scrapCount -= 1
+const toggleScrap = async (course) => {
+  try {
+    const response = await courseApi.toggleScrap(course.courseId)
+    // response.data.data is boolean (true=scrapped, false=unscrapped)
+    const isNowScrapped = response.data.data
+    
+    // Update local state
+    // Note: CourseListResponse might NOT have isScrapped field initially, 
+    // so we might need to handle it optimistically or rely on API return.
+    if (course.isScrapped === undefined) course.isScrapped = false
+    
+    course.isScrapped = isNowScrapped
+    
+    // Update count accordingly
+    if (isNowScrapped) {
+      course.scrapCount = (course.scrapCount || 0) + 1
+      alert('코스가 스크랩되었습니다.')
+    } else {
+      course.scrapCount = (course.scrapCount || 0) - 1
+      alert('코스 스크랩이 취소되었습니다.')
+    }
+  } catch (error) {
+    console.error('Scrap failed:', error)
+    if (error.response && error.response.status === 401) {
+      alert('로그인이 필요한 서비스입니다.')
+    }
   }
 }
 
 const navigateToCreate = () => {
-  router.push('/courses/create')
+  if (map) {
+      const center = map.getCenter()
+      const level = map.getLevel()
+      router.push({ 
+          path: '/courses/create', 
+          query: { 
+              lat: center.getLat(), 
+              lng: center.getLng(), 
+              zoom: level 
+          } 
+      })
+  } else {
+      router.push('/courses/create')
+  }
 }
 
 const openDetail = (course) => {

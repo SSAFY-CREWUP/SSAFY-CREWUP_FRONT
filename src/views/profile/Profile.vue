@@ -1,5 +1,5 @@
 <script setup>
-import { ref, reactive, computed, watch } from 'vue'
+import { ref, reactive, computed, watch, onMounted } from 'vue'
 import { useAuthStore } from '../../stores/auth'
 import { useRouter } from 'vue-router'
 import { regions } from '../../constants/regions'
@@ -7,24 +7,22 @@ import {
   Trophy, 
   Timer, 
   ArrowRight, 
-  Setting, 
-  InfoFilled, 
-  Document, 
   SwitchButton,
   MapLocation,
-  Collection,
-  Edit,
-  Check,
-  Close,
-  Camera
+  Camera,
 } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
+
+// New Components
+import MyCourseList from '../../components/profile/MyCourseList.vue'
+import ScrappedCourseList from '../../components/profile/ScrappedCourseList.vue'
 
 const authStore = useAuthStore()
 const router = useRouter()
 
 const isEditing = ref(false)
 const loading = ref(false)
+const activeTab = ref('stats') // 'stats', 'my_courses', 'scrapped'
 
 const mockUser = {
   nickname: '김싸피',
@@ -55,21 +53,11 @@ const editForm = reactive({
 watch(() => isEditing.value, (newVal) => {
   if (newVal && currentUser.value) {
     editForm.nickname = currentUser.value.nickname || currentUser.value.name
-    // Remove introduction mapping
     // editForm.introduction = currentUser.value.introduction
-    
-    // Ensure gender matches the value attribute of radio inputs ('male', 'female')
-    // Backend sends 'MALE' or 'FEMALE' usually
     editForm.gender = (currentUser.value.gender === 'MALE' ? 'male' : (currentUser.value.gender === 'FEMALE' ? 'female' : currentUser.value.gender))
-    
-    // Ensure birthdate is YYYY-MM-DD
     editForm.birthdate = currentUser.value.birthDate || currentUser.value.birthdate
-    
     editForm.region = currentUser.value.activityRegion
-    
-    // Parse pace string "5'30"" to slider value (minutes) if needed.
-    // Ideally we would reverse formatPace.
-    editForm.pace = 30 // Simplified reset for now or implement reverse parsing logic
+    editForm.pace = 30 // Simplified
   }
 })
 
@@ -167,7 +155,6 @@ const handleAction = (item) => {
 }
 
 // Fetch latest profile data when component mounts
-import { onMounted } from 'vue'
 onMounted(() => {
     authStore.fetchProfile()
 })
@@ -283,27 +270,70 @@ onMounted(() => {
         </div>
       </div>
 
-      <!-- Menu Section -->
-      <div class="menu-section">
-        <div v-for="(section, index) in menuItems" :key="index" class="menu-group">
-          <h3 class="menu-title">{{ section.title }}</h3>
-          <div class="menu-list">
-            <div 
-              v-for="(item, i) in section.items" 
-              :key="i" 
-              class="menu-item"
-              :class="{ 'danger': item.danger }"
-              @click="item.route ? $router.push(item.route) : handleAction(item)"
-            >
-              <div class="item-left">
-                <el-icon class="item-icon"><component :is="item.icon" /></el-icon>
-                <span class="item-label">{{ item.label }}</span>
+      <!-- Tab Navigation -->
+      <div class="profile-tabs">
+        <button 
+          class="tab-item" 
+          :class="{ active: activeTab === 'stats' }" 
+          @click="activeTab = 'stats'"
+        >
+          내 정보
+        </button>
+        <button 
+          class="tab-item" 
+          :class="{ active: activeTab === 'my_courses' }" 
+          @click="activeTab = 'my_courses'"
+        >
+          나의 코스
+        </button>
+        <button 
+          class="tab-item" 
+          :class="{ active: activeTab === 'scrapped' }" 
+          @click="activeTab = 'scrapped'"
+        >
+          스크랩
+        </button>
+      </div>
+
+      <!-- Tab Content -->
+      <div class="tab-content">
+        
+        <!-- 1. Stats & Account (Menu) -->
+        <div v-if="activeTab === 'stats'">
+           <div class="menu-section">
+            <div v-for="(section, index) in menuItems" :key="index" class="menu-group">
+              <h3 class="menu-title">{{ section.title }}</h3>
+              <div class="menu-list">
+                <div 
+                  v-for="(item, i) in section.items" 
+                  :key="i" 
+                  class="menu-item"
+                  :class="{ 'danger': item.danger }"
+                  @click="item.route ? $router.push(item.route) : handleAction(item)"
+                >
+                  <div class="item-left">
+                    <el-icon class="item-icon"><component :is="item.icon"></component></el-icon>
+                    <span class="item-label">{{ item.label }}</span>
+                  </div>
+                  <el-icon class="arrow-icon"><ArrowRight /></el-icon>
+                </div>
               </div>
-              <el-icon class="arrow-icon"><ArrowRight /></el-icon>
             </div>
           </div>
         </div>
+
+        <!-- 2. My Created Courses -->
+        <div v-if="activeTab === 'my_courses'" class="component-tab">
+           <MyCourseList />
+        </div>
+
+        <!-- 3. Scrapped Courses -->
+        <div v-if="activeTab === 'scrapped'" class="component-tab">
+           <ScrappedCourseList />
+        </div>
+
       </div>
+
     </div>
     <div v-else class="loading-state">
       <p>로그인 정보가 없습니다.</p>
@@ -569,9 +599,39 @@ onMounted(() => {
   font-size: 0.8rem;
 }
 
+/* Tabs */
+.profile-tabs {
+  display: flex;
+  background: white;
+  padding: 4px; /* small padding for pill shape container if needed, or just border-bottom */
+  margin-bottom: 20px;
+  border-radius: 12px;
+  background-color: #f5f5f5;
+}
+
+.tab-item {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  background: none;
+  font-weight: 600;
+  color: #888;
+  cursor: pointer;
+  border-radius: 10px;
+  transition: all 0.2s;
+  font-size: 0.9rem;
+}
+
+.tab-item.active {
+  background: white;
+  color: #333;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  font-weight: 800;
+}
+
 /* Menu Section */
 .menu-section {
-  padding-bottom: 20px;
+  padding-bottom: 40px;
 }
 
 .menu-group {
@@ -579,8 +639,9 @@ onMounted(() => {
 }
 
 .menu-title {
-  font-size: 0.9rem;
-  color: #888;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #999;
   margin-bottom: 12px;
   padding-left: 4px;
 }
@@ -589,13 +650,14 @@ onMounted(() => {
   background: white;
   border-radius: 16px;
   overflow: hidden;
+  /* box-shadow: 0 2px 12px rgba(0,0,0,0.03); */
 }
 
 .menu-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px 20px;
+  padding: 16px;
   cursor: pointer;
   transition: background 0.2s;
   border-bottom: 1px solid #f5f5f5;
@@ -609,6 +671,10 @@ onMounted(() => {
   background: #f9f9f9;
 }
 
+.menu-item.danger .item-label, .menu-item.danger .item-icon {
+  color: #ff4d4f;
+}
+
 .item-left {
   display: flex;
   align-items: center;
@@ -617,27 +683,27 @@ onMounted(() => {
 
 .item-icon {
   font-size: 1.2rem;
-  color: #444;
+  color: #333;
 }
 
 .item-label {
-  font-size: 1rem;
+  font-size: 0.95rem;
+  font-weight: 500;
   color: #333;
 }
 
 .arrow-icon {
   color: #ccc;
-  font-size: 1rem;
-}
-
-.menu-item.danger .item-label,
-.menu-item.danger .item-icon {
-  color: var(--color-energy-red);
+  font-size: 0.9rem;
 }
 
 .loading-state {
-  text-align: center;
-  padding: 40px;
-  color: #666;
+    text-align: center;
+    padding: 20px;
+    color: #888;
+}
+
+.component-tab {
+    /* min-height: 200px; */
 }
 </style>

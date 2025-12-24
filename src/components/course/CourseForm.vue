@@ -60,18 +60,31 @@ const handleSave = async () => {
     return
   }
 
-  const crewId = route.params.id
-  // Pass crewId separately if needed, but store action handles payload merging
-  const success = await courseStore.saveCourse(crewId)
-  
-  if (success) {
-    alert('코스가 성공적으로 저장되었습니다!')
-    if (crewId) {
-      router.push(`/crews/${crewId}/courses`)
-    } else {
-      router.push('/courses')
-    }
+  // Check if Editing
+  const editId = route.query.edit
+  let success = false
+
+  if (editId) {
+      success = await courseStore.updateCourseAction(editId)
+      if (success) {
+          alert('코스가 성공적으로 수정되었습니다!')
+          router.push('/profile') // Or wherever appropriate
+      }
   } else {
+      const crewId = route.params.id
+      success = await courseStore.saveCourse(crewId)
+      
+      if (success) {
+        alert('코스가 성공적으로 저장되었습니다!')
+        if (crewId) {
+          router.push(`/crews/${crewId}/courses`)
+        } else {
+          router.push('/courses')
+        }
+      }
+  }
+
+  if (!success) {
     alert('저장에 실패했습니다. 관리자에게 문의하세요.')
   }
 }
@@ -87,7 +100,7 @@ const handleResetPath = () => {
 <template>
   <div class="course-form-container">
     <div class="form-header">
-      <h2>코스 만들기</h2>
+      <h2>{{ route.query.edit ? '코스 수정하기' : '코스 만들기' }}</h2>
     </div>
 
     <div class="scrollable-content">
