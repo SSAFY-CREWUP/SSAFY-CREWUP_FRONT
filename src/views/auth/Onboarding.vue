@@ -144,7 +144,6 @@ const handleComplete = async () => {
           <label>활동 지역</label>
           <select v-model="form.region" class="input-field">
             <option value="" disabled>지역을 선택해주세요</option>
-<<<<<<< Updated upstream
             <optgroup label="서울">
                 <option value="서울_강남구">강남구</option>
                 <option value="서울_강동구">강동구</option>
@@ -204,7 +203,7 @@ const handleComplete = async () => {
             <optgroup label="부산">
                 <option value="부산_해운대구">해운대구</option>
                 <option value="부산_수영구">수영구</option>
-                <option value="부산진구">부산진구</option>
+                <option value="부산_부산진구">부산진구</option>
             </optgroup>
             <optgroup label="대구">
                 <option value="대구_수성구">수성구</option>
@@ -234,11 +233,6 @@ const handleComplete = async () => {
                 <option value="제주_제주시">제주시</option>
                 <option value="제주_서귀포시">서귀포시</option>
             </optgroup>
-=======
-            <option v-for="region in regions" :key="region.value" :value="region.value">
-              {{ region.label }}
-            </option>
->>>>>>> Stashed changes
           </select>
         </div>
       </div>

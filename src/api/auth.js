@@ -40,8 +40,8 @@ export default {
     submitOnboarding(data) {
         return api.put('/api/v1/user/add/info', {
             gender: data.gender === 'male' ? 'MALE' : 'FEMALE',
-            birthDate: data.birthdate,
-            averagePace: data.pace,
+            birthDate: data.birthDate,
+            averagePace: data.averagePace,
             activityRegion: data.region
         })
     },
