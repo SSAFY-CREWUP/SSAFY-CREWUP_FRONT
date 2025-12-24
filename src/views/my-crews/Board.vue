@@ -17,10 +17,19 @@ const pageSize = ref(10)
 const total = ref(0)
 
 const categories = ['전체', '공지', '가입인사', '자유']
+const categoryMap = {
+  'NOTICE': '공지',
+  'FREE': '자유',
+  'GREETING': '가입인사',
+  '공지': '공지',
+  '자유': '자유',
+  '가입인사': '가입인사'
+}
 
 const getCategoryClass = (cat) => {
-  if (cat === '공지') return 'cat-notice'
-  if (cat === '가입인사') return 'cat-greeting'
+  const koreanCat = categoryMap[cat] || cat
+  if (koreanCat === '공지') return 'cat-notice'
+  if (koreanCat === '가입인사') return 'cat-greeting'
   return 'cat-free'
 }
 
@@ -107,6 +116,13 @@ const openDetailModal = async (postId) => {
     ])
     selectedPost.value = postData
     postComments.value = commentsData
+    
+    // Update list item views/comments to match detail
+    const listItem = posts.value.find(p => p.id === postId)
+    if (listItem) {
+        listItem.views = postData.views
+        listItem.comments = commentsData.length // Use actual comments length
+    }
   } catch (error) {
     console.error('Failed to load post details', error)
   } finally {
@@ -119,15 +135,19 @@ const handleAddComment = async () => {
   
   commentSubmitting.value = true
   try {
-    const addedComment = await crewStore.addComment(crewId, selectedPost.value.id, {
+    await crewStore.addComment(crewId, selectedPost.value.id, {
       content: newComment.value
     })
-    postComments.value.push(addedComment)
+    // Refresh comments list as API returns Void
+    postComments.value = await crewStore.fetchComments(crewId, selectedPost.value.id)
+    
     newComment.value = ''
-    if (selectedPost.value) selectedPost.value.comments++
-    // Update list item comment count if needed
+    
+    // Update list item comment count with actual length logic
     const listItem = posts.value.find(p => p.id === selectedPost.value.id)
-    if (listItem) listItem.comments++
+    if (listItem) {
+      listItem.comments = postComments.value.length
+    }
   } catch (error) {
     console.error('Failed to add comment', error)
   } finally {
@@ -174,7 +194,7 @@ const handleAddComment = async () => {
       </div>
       <div v-else v-for="post in posts" :key="post.id" class="post-item" @click="navigateToDetail(post.id)">
         <div class="post-header-row">
-          <span class="post-category" :class="getCategoryClass(post.category)">{{ post.category }}</span>
+          <span class="post-category" :class="getCategoryClass(post.category)">{{ categoryMap[post.category] || post.category }}</span>
           <h3 class="post-title">{{ post.title }}</h3>
         </div>
         
@@ -184,7 +204,7 @@ const handleAddComment = async () => {
 
         <div class="post-footer">
           <div class="author-info">
-            <span class="author-name">{{ post.author }}</span>
+            <span class="author-name">작성자 : {{ post.author }}</span>
             <el-tag size="small" effect="plain" v-if="post.authorRole" class="role-tag">{{ post.authorRole }}</el-tag>
           </div>
           <div class="meta-info">
@@ -270,11 +290,11 @@ const handleAddComment = async () => {
       <div v-else-if="selectedPost" class="post-detail-content">
         <div class="detail-header">
           <div class="detail-meta">
-            <span class="category-badge">{{ selectedPost.category }}</span>
+            <span class="category-badge" :class="getCategoryClass(selectedPost.category)">{{ categoryMap[selectedPost.category] || selectedPost.category }}</span>
             <span class="detail-date">{{ selectedPost.date }}</span>
           </div>
           <div class="detail-author">
-            <span class="author-name">{{ selectedPost.author }}</span>
+            <span class="author-name">작성자 : {{ selectedPost.author }}</span>
             <span class="author-role" v-if="selectedPost.authorRole">{{ selectedPost.authorRole }}</span>
           </div>
         </div>
@@ -285,12 +305,12 @@ const handleAddComment = async () => {
         
         <div class="detail-stats">
           <span><el-icon><View /></el-icon> {{ selectedPost.views }}</span>
-          <span><el-icon><ChatDotRound /></el-icon> {{ selectedPost.comments }}</span>
+          <span><el-icon><ChatDotRound /></el-icon> {{ postComments.length }}</span>
         </div>
 
         <div class="comments-section">
           <h4>댓글 {{ postComments.length }}</h4>
-          <ul class="comment-list">
+          <ul class="comment-list" v-loading="commentSubmitting">
             <li v-for="comment in postComments" :key="comment.id" class="comment-item">
               <div class="comment-header">
                 <span class="comment-author">{{ comment.author }}</span>
@@ -303,6 +323,7 @@ const handleAddComment = async () => {
           <div class="comment-input">
             <el-input
               v-model="newComment"
+              :disabled="commentSubmitting"
               placeholder="댓글을 입력하세요"
               @keyup.enter="handleAddComment"
             >

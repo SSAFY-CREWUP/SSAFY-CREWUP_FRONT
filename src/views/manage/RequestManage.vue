@@ -59,7 +59,6 @@ const formatDate = (dateStr) => {
             <el-avatar :size="50" :src="member.profileImage || 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'" />
             <div class="member-info">
               <span class="nickname">{{ member.nickname }}</span>
-              <span class="date">{{ formatDate(member.joinedAt) }} 신청</span>
             </div>
           </div>
           

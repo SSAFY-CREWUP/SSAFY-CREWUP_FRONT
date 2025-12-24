@@ -12,6 +12,7 @@ dayjs.locale('ko')
 
 const router = useRouter()
 const crewStore = useCrewStore()
+const authStore = useAuthStore()
 const isMobileMenuOpen = ref(false)
 
 const notifications = computed(() => crewStore.notifications)
@@ -21,6 +22,7 @@ onMounted(() => {
   crewStore.fetchNotifications()
   crewStore.fetchUnreadCount()
   crewStore.fetchMyCrews()
+  authStore.fetchProfile()
 })
 
 const handleCommand = async (command) => {
@@ -57,7 +59,7 @@ const handleViewAllNotifications = async () => {
     <div class="navbar-container">
       <!-- Left: Logo -->
       <div class="navbar-left">
-        <RouterLink to="/" class="logo">
+        <RouterLink to="/crews" class="logo">
           <span class="logo-text">CrewUp</span>
         </RouterLink>
       </div>
@@ -117,8 +119,8 @@ const handleViewAllNotifications = async () => {
         <!-- Profile -->
         <el-dropdown trigger="click" @command="handleCommand">
           <div class="profile-trigger">
-            <el-avatar :size="32" src="https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png" />
-            <span class="profile-name">User</span>
+            <el-avatar :size="32" :src="authStore.user?.profileImage || 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png'" />
+            <span class="profile-name">{{ authStore.user?.nickname || 'Guest' }}</span>
           </div>
           <template #dropdown>
             <el-dropdown-menu>

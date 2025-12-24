@@ -122,8 +122,14 @@ export default {
             size: params.size
         }
 
-        // Remove undefined keys
-        Object.keys(qp).forEach(key => qp[key] === undefined && delete qp[key])
+        // Remove undefined keys and empty arrays
+        Object.keys(qp).forEach(key => {
+            if (qp[key] === undefined) {
+                delete qp[key]
+            } else if (Array.isArray(qp[key]) && qp[key].length === 0) {
+                delete qp[key]
+            }
+        })
         // Serialize arrays nicely (axios does this by default usually as key[], check if backend needs repeated keys)
         // Spring accepts 'activityTimes=A&activityTimes=B'.
         // Axios serializes array as 'activityTimes[]=A&activityTimes[]=B' by default? 
@@ -314,100 +320,121 @@ export default {
     },
     // Board API
     getPosts(crewId, params) {
-        return new Promise((resolve) => {
-            setTimeout(() => {
-                const posts = Array.from({ length: 35 }, (_, i) => {
-                    const category = ['공지', '가입인사', '자유'][Math.floor(Math.random() * 3)]
-                    const authorRole = i % 5 === 0 ? '크루장' : (i % 7 === 0 ? '매니저' : null)
-                    return {
-                        id: i + 1,
-                        category: category,
-                        title: `${category} 게시글 제목입니다. ${i + 1}`,
-                        content: '게시글 본문 내용입니다. 이 부분은 실제 데이터 연동 시 본문의 일부를 보여주게 됩니다. 게시글 본문 내용입니다. 이 부분은 실제 데이터 연동 시 본문의 일부를 보여주게 됩니다.',
-                        author: `Member ${Math.floor(Math.random() * 20) + 1}`,
-                        authorRole: authorRole,
-                        date: '2024-11-24',
-                        views: Math.floor(Math.random() * 100),
-                        comments: Math.floor(Math.random() * 20)
-                    }
-                })
-                let filtered = [...posts]
-                // Filter by Category
-                if (params.category && params.category !== '전체') {
-                    filtered = filtered.filter(p => p.category === params.category)
-                }
-                // Filter by Search (Title)
-                if (params.search) {
-                    filtered = filtered.filter(p => p.title.toLowerCase().includes(params.search.toLowerCase()))
-                }
-                // Pagination
-                const page = params.page || 1
-                const size = params.size || 10
-                const start = (page - 1) * size
-                const end = start + size
-                const paginated = filtered.slice(start, end)
-                resolve({
-                    data: paginated,
-                    total: filtered.length
-                })
-            }, 500)
+        console.log('getPosts params:', params)
+        const queryParams = {
+            // Spring usually uses 0-based page index
+            page: (params.page && params.page > 0) ? params.page - 1 : 0,
+            size: params.size || 10,
+            keyword: params.search
+        }
+
+        // Map Korean category to Backend Enum
+        if (params.category === '전체') {
+            // omit category
+        } else if (params.category === '공지') {
+            queryParams.category = 'NOTICE'
+        } else if (params.category === '자유') {
+            queryParams.category = 'FREE'
+        } else if (params.category === '가입인사') {
+            queryParams.category = 'GREETING'
+        } else {
+            queryParams.category = params.category
+        }
+
+        console.log('Serialized Query Params:', queryParams)
+
+        return api.get(`/api/v1/crew/${crewId}/boards`, { params: queryParams }).then(response => {
+            console.log('Real API Response:', response.data)
+
+            const list = response.data.data || []
+
+            // Pagination Logic without Backend Total Count
+            const pageSize = queryParams.size
+            const pageIndex = queryParams.page // 0-based
+
+            let estimatedTotal = 0
+            if (list.length >= pageSize) {
+                // Return total enough to show *Next* page available, but not infinite
+                // e.g. Current Page 1 -> Show 2 pages available
+                estimatedTotal = (pageIndex + 2) * pageSize
+                // If user goes to page 2, backend returns list. If list full, we update total to page 3, etc.
+            } else {
+                // Last page reached
+                estimatedTotal = pageIndex * pageSize + list.length
+            }
+
+            return {
+                data: list.map(post => ({
+                    id: post.boardId,
+                    category: post.category,
+                    title: post.title,
+                    content: '',
+                    author: post.writerNickname,
+                    authorRole: null,
+                    date: post.createdAt,
+                    views: post.viewCount,
+                    comments: post.commentCount
+                })),
+                total: estimatedTotal
+            }
         })
     },
     getPost(crewId, postId) {
-        return new Promise((resolve) => {
-            setTimeout(() => {
-                const post = {
-                    id: parseInt(postId),
-                    category: '자유',
-                    title: `게시글 ${postId}의 제목입니다.`,
-                    content: `게시글 ${postId}의 상세 내용입니다. \n\n이곳에는 게시글의 본문이 들어갑니다. 줄바꿈도 되고, \n여러 내용이 들어갈 수 있습니다.`,
-                    author: '김러너',
-                    authorRole: '정회원',
-                    date: '2024-11-24 14:30',
-                    views: 123,
-                    comments: 5
+        return api.get(`/api/v1/crew/${crewId}/boards/${postId}`).then(response => {
+            const data = response.data.data
+            return {
+                data: {
+                    id: data.boardId,
+                    category: data.category,
+                    title: data.title,
+                    content: data.content,
+                    author: data.writerNickname || data.nickname,
+                    authorRole: data.role,
+                    authorProfileImage: data.profileImage,
+                    date: data.createdAt,
+                    views: data.viewCount,
+                    comments: data.commentCount,
+                    images: data.images || []
                 }
-                resolve({ data: post })
-            }, 300)
+            }
         })
     },
     createPost(crewId, postData) {
-        return new Promise((resolve) => {
-            setTimeout(() => {
-                console.log(`Creating post in crew ${crewId}:`, postData)
-                resolve({ success: true })
-            }, 500)
-        })
+        console.log('createPost input:', postData)
+        let category = 'FREE'
+        if (postData.category === '공지') category = 'NOTICE'
+        else if (postData.category === '가입인사') category = 'GREETING'
+
+        const payload = {
+            title: postData.title,
+            content: postData.content,
+            category: category
+        }
+        console.log('createPost payload:', payload)
+
+        return api.post(`/api/v1/crew/${crewId}/boards`, payload)
     },
     getComments(crewId, postId) {
-        return new Promise((resolve) => {
-            setTimeout(() => {
-                const comments = Array.from({ length: 5 }, (_, i) => ({
-                    id: i + 1,
-                    author: `User ${i + 1}`,
-                    content: `댓글 내용입니다. ${i + 1}`,
-                    date: '2024-11-24 15:00',
-                    image: `https://picsum.photos/seed/comment${i}/50/50`
+        return api.get(`/api/v1/crew/${crewId}/boards/${postId}/comments`).then(response => {
+            const list = response.data.data || []
+            // Sort by latest (assuming ID is incremental, or use date)
+            const sortedList = list.sort((a, b) => b.commentId - a.commentId)
+
+            return {
+                data: sortedList.map(c => ({
+                    id: c.commentId,
+                    author: c.writerNickname || c.nickname,
+                    content: c.content,
+                    date: c.createdAt,
+                    image: c.profileImage,
+                    isAuthor: c.isAuthor
                 }))
-                resolve({ data: comments })
-            }, 300)
+            }
         })
     },
     addComment(crewId, postId, commentData) {
-        return new Promise((resolve) => {
-            setTimeout(() => {
-                console.log(`Adding comment to post ${postId} in crew ${crewId}:`, commentData)
-                resolve({
-                    success: true,
-                    data: {
-                        id: Date.now(),
-                        author: '나(Me)',
-                        content: commentData.content,
-                        date: new Date().toISOString().replace('T', ' ').substring(0, 16),
-                        image: 'https://picsum.photos/seed/me/50/50'
-                    }
-                })
-            }, 300)
+        return api.post(`/api/v1/crew/${crewId}/boards/${postId}/comments`, {
+            content: commentData.content
         })
     },
     // Schedule API

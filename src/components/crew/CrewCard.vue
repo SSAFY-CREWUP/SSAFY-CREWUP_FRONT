@@ -15,6 +15,17 @@ const router = useRouter()
 const goToDetail = () => {
   router.push(`/crews/${props.crew.id}`)
 }
+
+const formatPace = (pace) => {
+  if (!pace) return '00:00'
+  const paceNum = Number(pace)
+  if (isNaN(paceNum)) return pace
+  
+  // Assuming pace is in minutes (e.g., 5.5 = 5:30, 6 = 6:00)
+  const minutes = Math.floor(paceNum)
+  const seconds = Math.round((paceNum - minutes) * 60)
+  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
+}
 </script>
 
 <template>
@@ -43,7 +54,7 @@ const goToDetail = () => {
         <div class="info-row">
           <div class="info-item" title="평균 페이스">
             <el-icon><Timer /></el-icon>
-            <span>{{ props.crew.pace }}</span>
+            <span>{{ formatPace(props.crew.pace) }}</span>
           </div>
           <div class="info-item" title="모집 대상">
              <!-- Using user icon or info icon -->
