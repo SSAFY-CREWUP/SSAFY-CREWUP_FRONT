@@ -93,21 +93,26 @@ onUnmounted(() => {
 
 <template>
   <div class="signup-container">
-    <div class="signup-card">
-      <div class="form-header">
-        <h1>회원가입</h1>
-        <p>CrewUp과 함께 러닝을 시작하세요.</p>
+    <!-- Muted & Deep Background -->
+    <div class="background-wrapper"></div>
+
+    <!-- 3D Card with Scale Animation -->
+    <div class="signup-card zoom-in-center">
+      <div class="card-header">
+        <h1 class="logo-text">CrewUp</h1>
+        <p class="subtitle">나만의 러닝 크루를 시작하세요</p>
       </div>
 
       <form @submit.prevent="handleSignup" class="signup-form">
-        <div class="profile-upload-section">
+        <!-- Profile Upload -->
+        <div class="profile-section stagger-1">
           <div class="avatar-wrapper" @click="triggerFileInput">
             <img v-if="previewImage" :src="previewImage" class="avatar-preview" />
             <div v-else class="avatar-placeholder">
-              <el-icon :size="40" color="#999"><Camera /></el-icon>
+              <el-icon :size="28" color="#94a3b8"><Camera /></el-icon>
             </div>
             <div class="avatar-overlay">
-              <span>변경</span>
+              <el-icon :size="24" color="#fff"><Camera /></el-icon>
             </div>
           </div>
           <input 
@@ -117,67 +122,77 @@ onUnmounted(() => {
             accept="image/*" 
             style="display: none" 
           />
-          <p class="profile-hint">프로필 사진 (선택)</p>
+          <span class="profile-label">프로필 사진 추가</span>
         </div>
 
-        <div class="form-group">
+        <!-- Inputs -->
+        <div class="input-group stagger-2">
           <label>이름</label>
-          <input 
-            v-model="form.name" 
-            type="text" 
-            placeholder="이름을 입력하세요"
-            class="input-field"
-            :class="{ error: v$.name.$error }"
-            @blur="v$.name.$touch"
-          />
-          <span v-if="v$.name.$error" class="error-message">이름을 입력해주세요.</span>
+          <div class="input-wrapper">
+             <input 
+                v-model="form.name" 
+                type="text" 
+                placeholder="이름을 입력하세요"
+                class="modern-input"
+                :class="{ error: v$.name.$error }"
+                @blur="v$.name.$touch"
+              />
+          </div>
+          <span v-if="v$.name.$error" class="error-msg">이름을 입력해주세요.</span>
         </div>
 
-        <div class="form-group">
+        <div class="input-group stagger-3">
           <label>이메일</label>
-          <input 
-            v-model="form.email" 
-            type="email" 
-            placeholder="example@crewup.com"
-            class="input-field"
-            :class="{ error: v$.email.$error }"
-            @blur="v$.email.$touch"
-          />
-          <span v-if="v$.email.$error" class="error-message">유효한 이메일을 입력해주세요.</span>
+          <div class="input-wrapper">
+             <input 
+                v-model="form.email" 
+                type="email" 
+                placeholder="example@crewup.com"
+                class="modern-input"
+                :class="{ error: v$.email.$error }"
+                @blur="v$.email.$touch"
+              />
+          </div>
+          <span v-if="v$.email.$error" class="error-msg">유효한 이메일을 입력해주세요.</span>
         </div>
 
-        <div class="form-group">
+        <div class="input-group stagger-4">
           <label>비밀번호</label>
-          <input 
-            v-model="form.password" 
-            type="password" 
-            placeholder="6자 이상 입력하세요"
-            class="input-field"
-            :class="{ error: v$.password.$error }"
-            @blur="v$.password.$touch"
-          />
-          <span v-if="v$.password.$error" class="error-message">비밀번호는 6자 이상이어야 합니다.</span>
+          <div class="input-wrapper">
+            <input 
+                v-model="form.password" 
+                type="password" 
+                placeholder="6자 이상 입력하세요"
+                class="modern-input"
+                :class="{ error: v$.password.$error }"
+                @blur="v$.password.$touch"
+              />
+          </div>
+          <span v-if="v$.password.$error" class="error-msg">비밀번호는 6자 이상이어야 합니다.</span>
         </div>
 
-        <div class="form-group">
+        <div class="input-group stagger-5">
           <label>비밀번호 확인</label>
-          <input 
-            v-model="form.confirmPassword" 
-            type="password" 
-            placeholder="비밀번호를 다시 입력하세요"
-            class="input-field"
-            :class="{ error: v$.confirmPassword.$error }"
-            @blur="v$.confirmPassword.$touch"
-          />
-          <span v-if="v$.confirmPassword.$error" class="error-message">비밀번호가 일치하지 않습니다.</span>
+           <div class="input-wrapper">
+              <input 
+                v-model="form.confirmPassword" 
+                type="password" 
+                placeholder="비밀번호를 다시 입력하세요"
+                class="modern-input"
+                :class="{ error: v$.confirmPassword.$error }"
+                @blur="v$.confirmPassword.$touch"
+              />
+           </div>
+          <span v-if="v$.confirmPassword.$error" class="error-msg">비밀번호가 일치하지 않습니다.</span>
         </div>
 
-        <button type="submit" class="btn-signup" :disabled="authStore.loading">
+        <button type="submit" class="submit-btn stagger-6" :disabled="authStore.loading">
           {{ authStore.loading ? '가입 중...' : '회원가입' }}
+          <span class="btn-shine"></span>
         </button>
 
-        <div class="login-link">
-          이미 계정이 있으신가요? <RouterLink to="/login">로그인</RouterLink>
+        <div class="login-link stagger-6">
+          이미 계정이 있으신가요? <RouterLink to="/login" class="link-text">로그인</RouterLink>
         </div>
       </form>
     </div>
@@ -190,167 +205,197 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: #f5f5f5;
-  padding: 20px;
+  position: relative;
+  overflow: hidden;
+  font-family: 'Inter', 'Apple SD Gothic Neo', sans-serif;
+  
+  /* Deep, Muted Navy Gradient (Less Saturated / "Jjeng-haji an-hgue") */
+  background: radial-gradient(circle at center, #2e3458 0%, #1e2040 60%, #0f1020 100%);
 }
 
+.background-wrapper {
+  position: absolute; inset: 0;
+  /* Add subtle texture or noise if needed, but keeping it clean for now */
+}
+
+/* 3D Glass Card */
 .signup-card {
-  background: white;
-  padding: 40px;
-  border-radius: 16px;
   width: 100%;
-  max-width: 450px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+  max-width: 460px;
+  /* Gradient background for volume */
+  background: linear-gradient(145deg, rgba(255,255,255,0.95) 0%, rgba(240,244,255,0.9) 100%);
+  backdrop-filter: blur(40px);
+  padding: 48px;
+  border-radius: 28px;
+  
+  /* Enhanced 3D Shadows */
+  box-shadow: 
+    0 10px 30px rgba(0,0,0,0.2), /* Droplight */
+    0 30px 60px -10px rgba(0,0,0,0.5), /* Deep Shadow */
+    inset 0 1px 0 rgba(255,255,255,0.8), /* Top Highlight */
+    inset 0 -1px 0 rgba(200,210,255,0.3); /* Bottom Refl */
+    
+  border: 1px solid rgba(255,255,255,0.4);
+  z-index: 10;
+  transform-style: preserve-3d;
 }
 
-.form-header {
-  text-align: center;
-  margin-bottom: 30px;
+/* Zoom In Animation */
+.zoom-in-center {
+    animation: zoomIn 0.7s cubic-bezier(0.19, 1, 0.22, 1) forwards;
+    transform-origin: center center;
 }
 
-.form-header h1 {
-  font-size: 1.8rem;
-  font-weight: 700;
-  margin-bottom: 8px;
-  color: #333;
+@keyframes zoomIn {
+    0% {
+        opacity: 0;
+        transform: scale(0.85) translateY(30px);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
 }
 
-.form-header p {
-  color: #666;
+/* Header */
+.card-header { text-align: center; margin-bottom: 30px; }
+.logo-text {
+  font-size: 2.2rem;
+  font-weight: 900;
+  background: linear-gradient(to right, #1e1b4b, #4338ca);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 6px;
+  letter-spacing: -0.02em;
+}
+.subtitle {
+  color: #64748b;
+  font-size: 0.95rem;
+  font-weight: 500;
 }
 
-.form-group {
-  margin-bottom: 20px;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 8px;
-  font-weight: 600;
-  color: #333;
-}
-
-.profile-upload-section {
+/* Profile Upload */
+.profile-section {
     display: flex;
     flex-direction: column;
     align-items: center;
-    margin-bottom: 24px;
+    gap: 12px;
+    margin-bottom: 28px;
 }
-
 .avatar-wrapper {
-    width: 110px;
-    height: 110px;
+    width: 96px; height: 96px;
     border-radius: 50%;
-    overflow: hidden;
+    background: #f8fafc;
+    border: 4px solid #fff;
+    /* Soft shadow for depth */
+    box-shadow: 
+        0 4px 12px rgba(0,0,0,0.08),
+        inset 0 2px 4px rgba(0,0,0,0.05);
     position: relative;
     cursor: pointer;
-    background-color: #f0f0f0;
-    border: 2px solid #eee;
-    transition: all 0.3s ease;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    display: flex; align-items: center; justify-content: center;
 }
-
 .avatar-wrapper:hover {
-    border-color: #4CAF50; /* 기본 테마색상 가정 */
-    transform: scale(1.02);
+    transform: scale(1.08) rotate(3deg);
+    border-color: #818cf8;
+    box-shadow: 0 8px 20px rgba(99, 102, 241, 0.25);
 }
-
-.avatar-preview {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
+.avatar-preview { width: 100%; height: 100%; object-fit: cover; }
 .avatar-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
+    position: absolute; inset: 0; background: rgba(99, 102, 241, 0.7);
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; transition: opacity 0.2s;
+    backdrop-filter: blur(2px);
+}
+.avatar-wrapper:hover .avatar-overlay { opacity: 1; }
+.profile-label { font-size: 0.85rem; color: #64748b; font-weight: 600; }
+
+/* Inputs */
+.signup-form { display: flex; flex-direction: column; gap: 18px; }
+.input-group label {
+    display: block; margin-bottom: 6px;
+    font-size: 0.85rem; font-weight: 600; color: #475569;
+    margin-left: 4px;
+}
+.input-wrapper { position: relative; }
+.modern-input {
     width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.4);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    opacity: 0;
-    transition: opacity 0.3s;
+    height: 50px;
+    padding: 0 16px;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    font-size: 0.95rem;
+    background: #fff;
+    transition: all 0.2s;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+}
+.modern-input:focus {
+    outline: none;
+    border-color: #6366F1;
+    background: #fff;
+    box-shadow: 
+        0 0 0 4px rgba(99, 102, 241, 0.1),
+        0 4px 10px rgba(99, 102, 241, 0.05);
+    transform: translateY(-1px);
+}
+.error-msg {
+    display: block; margin-top: 4px; margin-left: 4px;
+    font-size: 0.75rem; color: #ef4444; font-weight: 500;
 }
 
-.avatar-wrapper:hover .avatar-overlay {
-    opacity: 1;
+/* Submit Button & Animations */
+.submit-btn {
+    margin-top: 12px;
+    width: 100%; height: 54px;
+    background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+    color: white; border: none; border-radius: 16px;
+    font-size: 1.05rem; font-weight: 700;
+    cursor: pointer; position: relative; overflow: hidden;
+    transition: all 0.3s;
+    box-shadow: 
+        0 4px 12px rgba(79, 70, 229, 0.3),
+        inset 0 1px 0 rgba(255,255,255,0.2);
+}
+.submit-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 
+        0 8px 20px rgba(79, 70, 229, 0.4),
+        inset 0 1px 0 rgba(255,255,255,0.3);
+}
+.submit-btn:disabled { 
+    background: #cbd5e1; 
+    cursor: not-allowed; box-shadow: none; transform: none; 
 }
 
-.avatar-overlay span {
-    color: white;
-    font-size: 0.85rem;
+.btn-shine {
+    position: absolute; top: 0; left: -100%;
+    width: 50%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+    transform: skewX(-20deg);
+    animation: shine 4s infinite;
+}
+@keyframes shine {
+    0% { left: -100%; }
+    20% { left: 200%; }
+    100% { left: 200%; }
 }
 
-.profile-hint {
-    margin-top: 10px;
-    font-size: 0.85rem;
-    color: #888;
-}
+.login-link { text-align: center; font-size: 0.95rem; color: #94a3b8; margin-top: 12px; }
+.link-text { color: #818cf8; font-weight: 700; text-decoration: none; margin-left: 4px; transition: color 0.2s;}
+.link-text:hover { text-decoration: none; color: #a5b4fc; }
 
-.input-field {
-  width: 100%;
-  padding: 12px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  font-size: 1rem;
-  transition: all 0.2s;
-}
+/* Stagger Animations */
+.stagger-1 { animation: slideIn 0.5s ease-out backwards 0.2s; }
+.stagger-2 { animation: slideIn 0.5s ease-out backwards 0.25s; }
+.stagger-3 { animation: slideIn 0.5s ease-out backwards 0.3s; }
+.stagger-4 { animation: slideIn 0.5s ease-out backwards 0.35s; }
+.stagger-5 { animation: slideIn 0.5s ease-out backwards 0.4s; }
+.stagger-6 { animation: slideIn 0.5s ease-out backwards 0.45s; }
 
-.input-field:focus {
-  border-color: #4CAF50;
-  outline: none;
-  box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.1);
-}
-
-.input-field.error {
-  border-color: #ff4d4f;
-}
-
-.error-message {
-  display: block;
-  margin-top: 5px;
-  font-size: 0.8rem;
-  color: #ff4d4f;
-}
-
-.btn-signup {
-  width: 100%;
-  padding: 14px;
-  background: #4CAF50;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 1rem;
-  font-weight: 700;
-  cursor: pointer;
-  margin-top: 10px;
-  transition: background 0.2s;
-}
-
-.btn-signup:hover {
-  background: #45a049;
-}
-
-.btn-signup:disabled {
-  background: #ccc;
-  cursor: not-allowed;
-}
-
-.login-link {
-  margin-top: 20px;
-  text-align: center;
-  font-size: 0.9rem;
-  color: #666;
-}
-
-.login-link a {
-  color: #4CAF50;
-  font-weight: 600;
-  text-decoration: none;
+@keyframes slideIn {
+    from { opacity: 0; transform: translateY(15px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 </style>

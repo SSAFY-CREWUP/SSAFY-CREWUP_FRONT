@@ -141,7 +141,7 @@ const togglePasswordVisibility = () => {
           </form>
         </div>
         
-        <div class="copyright">© 2024 CrewUp Corp.</div>
+        <div class="copyright">© 2025 SSAFY 관통프로젝트.</div>
         
         <!-- Running Track Background Elements -->
         <div class="track-bg">
