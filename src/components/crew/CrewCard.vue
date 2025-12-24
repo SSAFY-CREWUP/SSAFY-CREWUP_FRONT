@@ -59,116 +59,95 @@ const goToDetail = () => {
 </template>
 
 <style scoped>
+/* Clean Modern Card Style */
 .crew-card {
   background: white;
-  border-radius: 16px;
+  border-radius: 20px;
   overflow: hidden;
+  border: 1px solid #e2e8f0;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.03);
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
   cursor: pointer;
-  border: 1px solid transparent;
   display: flex;
   flex-direction: column;
 }
 
 .crew-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
-  border-color: var(--color-primary-100);
+  transform: translateY(-8px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08); /* Softer, deeper shadow */
+  border-color: #cbd5e1;
 }
 
 .card-image {
-  height: 180px;
+  height: 200px; /* Taller image */
   overflow: hidden;
   position: relative;
 }
 
 .card-image img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform 0.5s ease;
+  width: 100%; height: 100%; object-fit: cover;
+  transition: transform 0.7s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
-
-.crew-card:hover .card-image img {
-  transform: scale(1.08);
-}
+.crew-card:hover .card-image img { transform: scale(1.1); }
 
 .image-overlay {
-    position: absolute;
-    top: 12px;
-    right: 12px;
+    position: absolute; top: 16px; left: 16px; /* Moved to left for better scan */
 }
-
 .region-badge {
-    background: rgba(0, 0, 0, 0.6);
+    background: rgba(15, 23, 42, 0.75); /* Dark Slate 900 */
     color: white;
-    padding: 4px 10px;
-    border-radius: 20px;
+    padding: 6px 12px;
+    border-radius: 30px;
     font-size: 0.75rem;
-    font-weight: 600;
-    backdrop-filter: blur(4px);
+    font-weight: 700;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
 }
 
 .card-content {
   padding: 24px;
-  display: flex;
-  flex-direction: column;
-  flex: 1;
+  flex: 1; display: flex; flex-direction: column;
 }
 
 .crew-name {
-  font-size: 1.15rem;
-  font-weight: 700;
-  margin-bottom: 16px;
-  color: var(--color-text-primary);
-  line-height: 1.4;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  font-size: 1.25rem; /* Larger Title */
+  font-weight: 800;
+  margin-bottom: 8px;
+  color: #1e1b4b; /* Deep Navy */
+  line-height: 1.3;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 
 .crew-info {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-bottom: 20px;
-  color: var(--color-text-secondary);
+  display: flex; flex-direction: column; gap: 8px; margin-bottom: 24px;
 }
 
-.info-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
+.info-row { display: flex; align-items: center; gap: 16px; }
 
 .info-item {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+  display: flex; align-items: center; gap: 6px;
   font-size: 0.9rem;
-  color: var(--color-text-secondary);
+  color: #64748b; /* Slate 500 */
+  font-weight: 500;
 }
-
-.info-item :deep(.el-icon) {
-    color: var(--color-text-tertiary);
-}
+.info-item :deep(.el-icon) { color: #94a3b8; font-size: 1rem; }
 
 .detail-btn {
   margin-top: auto;
   width: 100%;
-  padding: 12px;
-  background-color: var(--color-bg-secondary);
+  padding: 14px;
+  background: #f1f5f9; /* Slate 100 */
   border: none;
-  color: var(--color-text-secondary);
-  border-radius: 12px;
-  font-weight: 600;
+  color: #64748b;
+  border-radius: 14px;
+  font-weight: 700;
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .crew-card:hover .detail-btn {
-  background-color: var(--color-primary);
+  background: #6366F1; /* Primary Indigo */
   color: white;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
 }
 </style>
