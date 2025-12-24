@@ -18,9 +18,11 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'http://localhost:8080',
+        target: 'http://localhost:8080', // 백엔드 주소로 전달되어야 함
         changeOrigin: true,
       }
     }
-  }
+  },
 })
+
+

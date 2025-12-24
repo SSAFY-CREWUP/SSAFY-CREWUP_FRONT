@@ -2,28 +2,34 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../../stores/user'
+import { useAuthStore } from '../../stores/auth'
 import { Camera } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const userStore = useUserStore()
+const authStore = useAuthStore()
 
 const form = ref({
-  name: '',
-  introduction: '',
-  image: ''
+  nickname: '',
+  profileImage: '',
+  averagePace: '',
+  activityRegion: ''
 })
 
 const loading = ref(false)
 
+const regions = [
+  '서울', '경기', '인천', '강원', '대전', '충청', '대구', '부산', '경상', '광주', '전라', '제주'
+]
+
 onMounted(async () => {
-  if (!userStore.profile) {
-    await userStore.fetchProfile()
-  }
-  if (userStore.profile) {
+  const user = authStore.user
+  if (user) {
     form.value = {
-      name: userStore.profile.name,
-      introduction: userStore.profile.introduction,
-      image: userStore.profile.image
+      nickname: user.nickname || '',
+      profileImage: user.profileImage || '',
+      averagePace: user.averagePace || '',
+      activityRegion: user.activityRegion || ''
     }
   }
 })
@@ -36,15 +42,15 @@ const handleImageClick = () => {
     'https://picsum.photos/seed/user3/200/200',
     'https://picsum.photos/seed/user4/200/200'
   ]
-  const currentIdx = images.indexOf(form.value.image)
+  const currentIdx = images.indexOf(form.value.profileImage)
   const nextIdx = (currentIdx + 1) % images.length
-  form.value.image = images[nextIdx]
+  form.value.profileImage = images[nextIdx]
   alert('프로필 이미지가 변경되었습니다 (Mock)')
 }
 
 const handleSave = async () => {
-  if (!form.value.name.trim()) {
-    alert('이름을 입력해주세요.')
+  if (!form.value.nickname.trim()) {
+    alert('닉네임을 입력해주세요.')
     return
   }
 
@@ -52,10 +58,21 @@ const handleSave = async () => {
   try {
     const success = await userStore.updateProfile(form.value)
     if (success) {
+      // Sync authStore and localStorage
+      const updatedUser = { 
+        ...authStore.user,
+        ...form.value
+      }
+      
+      authStore.user = updatedUser
+      localStorage.setItem('user', JSON.stringify(updatedUser))
+
       alert('프로필이 수정되었습니다.')
       router.push('/profile')
     } else {
-      alert('수정에 실패했습니다.')
+      alert('수정에 실패했습니다 (API 미연동)')
+      // For now, simulate success for UI testing if API fails
+      // router.push('/profile')
     }
   } finally {
     loading.value = false
@@ -72,7 +89,7 @@ const handleSave = async () => {
     <div class="edit-form" v-loading="loading">
       <div class="image-section">
         <div class="image-wrapper" @click="handleImageClick">
-          <img :src="form.image" alt="Profile" class="profile-img" />
+          <img :src="form.profileImage" alt="Profile" class="profile-img" />
           <div class="camera-icon">
             <el-icon><Camera /></el-icon>
           </div>
@@ -81,18 +98,20 @@ const handleSave = async () => {
       </div>
 
       <div class="form-group">
-        <label>이름</label>
-        <el-input v-model="form.name" placeholder="이름을 입력하세요" />
+        <label>닉네임</label>
+        <el-input v-model="form.nickname" placeholder="닉네임을 입력하세요" />
+      </div>
+      
+      <div class="form-group">
+        <label>평균 페이스</label>
+        <el-input v-model="form.averagePace" placeholder="예: 05:30" />
       </div>
 
       <div class="form-group">
-        <label>자기소개</label>
-        <el-input
-          v-model="form.introduction"
-          type="textarea"
-          :rows="4"
-          placeholder="자기소개를 입력하세요"
-        />
+        <label>활동 지역</label>
+        <el-select v-model="form.activityRegion" placeholder="지역 선택" style="width: 100%">
+          <el-option v-for="r in regions" :key="r" :label="r" :value="r" />
+        </el-select>
       </div>
 
       <div class="button-group">

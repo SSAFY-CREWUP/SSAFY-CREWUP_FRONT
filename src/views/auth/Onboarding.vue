@@ -2,6 +2,7 @@
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../../stores/auth'
+import { regions } from '../../constants/regions'
 import { Swiper, SwiperSlide } from 'swiper/vue'
 import { Pagination, Navigation } from 'swiper/modules'
 import 'swiper/css'
@@ -202,7 +203,7 @@ const handleComplete = async () => {
             <optgroup label="부산">
                 <option value="부산_해운대구">해운대구</option>
                 <option value="부산_수영구">수영구</option>
-                <option value="부산진구">부산진구</option>
+                <option value="부산_부산진구">부산진구</option>
             </optgroup>
             <optgroup label="대구">
                 <option value="대구_수성구">수성구</option>

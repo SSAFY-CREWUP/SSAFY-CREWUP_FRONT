@@ -1,5 +1,5 @@
 <script setup>
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../../stores/auth'
 import useVuelidate from '@vuelidate/core'
@@ -11,6 +11,7 @@ import { Camera } from '@element-plus/icons-vue'
 const router = useRouter()
 const authStore = useAuthStore()
 
+// 1. 상태 관리 정의
 const form = reactive({
   name: '',
   email: '',
@@ -18,6 +19,41 @@ const form = reactive({
   confirmPassword: ''
 })
 
+const previewImage = ref(null)      // 화면 표시용 URL
+const profileImageFile = ref(null)  // 서버 전송용 File 객체
+const fileInput = ref(null)         // input 태그 참조용
+
+// 2. 파일 변경 처리 함수 (중복 해결)
+const handleFileChange = (event) => {
+  const file = event.target.files[0]
+  if (file) {
+    // 타입 검증
+    if (!file.type.startsWith('image/')) {
+      ElMessage.error('이미지 파일만 업로드 가능합니다.')
+      return
+    }
+    // 용량 검증 (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      ElMessage.warning('이미지 크기는 5MB 이하여야 합니다.')
+      return
+    }
+
+    profileImageFile.value = file
+    
+    // 이전 미리보기 URL 메모리 해제
+    if (previewImage.value && previewImage.value.startsWith('blob:')) {
+      URL.revokeObjectURL(previewImage.value)
+    }
+    // 새 미리보기 생성
+    previewImage.value = URL.createObjectURL(file)
+  }
+}
+
+const triggerFileInput = () => {
+  fileInput.value.click()
+}
+
+// 3. 유효성 검사 규칙
 const rules = computed(() => ({
   name: { required },
   email: { required, email },
@@ -27,28 +63,7 @@ const rules = computed(() => ({
 
 const v$ = useVuelidate(rules, form)
 
-const fileInput = ref(null)
-const profileImage = ref(null)
-const previewImage = ref(null)
-
-const triggerFileInput = () => {
-  fileInput.value.click()
-}
-
-const handleFileChange = (event) => {
-  const file = event.target.files[0]
-  if (file) {
-    // Validate file type and size if needed
-    if (!file.type.startsWith('image/')) {
-        ElMessage.error('이미지 파일만 업로드 가능합니다.')
-        return
-    }
-    
-    profileImage.value = file
-    previewImage.value = URL.createObjectURL(file)
-  }
-}
-
+// 4. 회원가입 제출 함수
 const handleSignup = async () => {
   const isFormCorrect = await v$.value.$validate()
   if (!isFormCorrect) return
@@ -57,7 +72,7 @@ const handleSignup = async () => {
     name: form.name,
     email: form.email,
     password: form.password,
-    profileImage: profileImage.value
+    profileImage: profileImageFile.value
   })
 
   if (success) {
@@ -67,6 +82,13 @@ const handleSignup = async () => {
     ElMessage.error(authStore.error || '회원가입에 실패했습니다.')
   }
 }
+
+// 컴포넌트 소멸 시 메모리 해제
+onUnmounted(() => {
+  if (previewImage.value && previewImage.value.startsWith('blob:')) {
+    URL.revokeObjectURL(previewImage.value)
+  }
+})
 </script>
 
 <template>
@@ -79,23 +101,23 @@ const handleSignup = async () => {
 
       <form @submit.prevent="handleSignup" class="signup-form">
         <div class="profile-upload-section">
-            <div class="avatar-wrapper" @click="triggerFileInput">
-                <img v-if="previewImage" :src="previewImage" class="avatar-preview" />
-                <div v-else class="avatar-placeholder">
-                    <el-icon :size="40" color="#999"><Camera /></el-icon>
-                </div>
-                <div class="avatar-overlay">
-                    <span>변경</span>
-                </div>
+          <div class="avatar-wrapper" @click="triggerFileInput">
+            <img v-if="previewImage" :src="previewImage" class="avatar-preview" />
+            <div v-else class="avatar-placeholder">
+              <el-icon :size="40" color="#999"><Camera /></el-icon>
             </div>
-            <input 
-                type="file" 
-                ref="fileInput" 
-                @change="handleFileChange" 
-                accept="image/*" 
-                style="display: none" 
-            />
-            <p class="profile-hint">프로필 사진</p>
+            <div class="avatar-overlay">
+              <span>변경</span>
+            </div>
+          </div>
+          <input 
+            type="file" 
+            ref="fileInput" 
+            @change="handleFileChange" 
+            accept="image/*" 
+            style="display: none" 
+          />
+          <p class="profile-hint">프로필 사진 (선택)</p>
         </div>
 
         <div class="form-group">
@@ -216,14 +238,14 @@ const handleSignup = async () => {
 }
 
 .avatar-wrapper {
-    width: 100px;
-    height: 100px;
+    width: 110px;
+    height: 110px;
     border-radius: 50%;
     overflow: hidden;
     position: relative;
     cursor: pointer;
     background-color: #f0f0f0;
-    border: 2px solid #ddd;
+    border: 2px solid #eee;
     transition: all 0.3s ease;
     display: flex;
     justify-content: center;
@@ -231,8 +253,8 @@ const handleSignup = async () => {
 }
 
 .avatar-wrapper:hover {
-    border-color: var(--color-primary);
-    box-shadow: 0 0 15px rgba(0,0,0,0.1);
+    border-color: #4CAF50; /* 기본 테마색상 가정 */
+    transform: scale(1.02);
 }
 
 .avatar-preview {
@@ -241,21 +263,13 @@ const handleSignup = async () => {
     object-fit: cover;
 }
 
-.avatar-placeholder {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    width: 100%;
-    height: 100%;
-}
-
 .avatar-overlay {
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0,0,0,0.5);
+    background: rgba(0,0,0,0.4);
     display: flex;
     justify-content: center;
     align-items: center;
@@ -269,14 +283,13 @@ const handleSignup = async () => {
 
 .avatar-overlay span {
     color: white;
-    font-size: 0.9rem;
-    font-weight: 600;
+    font-size: 0.85rem;
 }
 
 .profile-hint {
-    margin-top: 8px;
-    font-size: 0.9rem;
-    color: #666;
+    margin-top: 10px;
+    font-size: 0.85rem;
+    color: #888;
 }
 
 .input-field {
@@ -285,29 +298,30 @@ const handleSignup = async () => {
   border: 1px solid #ddd;
   border-radius: 8px;
   font-size: 1rem;
-  transition: border-color 0.2s;
+  transition: all 0.2s;
 }
 
 .input-field:focus {
-  border-color: var(--color-primary);
+  border-color: #4CAF50;
   outline: none;
+  box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.1);
 }
 
 .input-field.error {
-  border-color: var(--color-energy-red);
+  border-color: #ff4d4f;
 }
 
 .error-message {
   display: block;
   margin-top: 5px;
-  font-size: 0.85rem;
-  color: var(--color-energy-red);
+  font-size: 0.8rem;
+  color: #ff4d4f;
 }
 
 .btn-signup {
   width: 100%;
   padding: 14px;
-  background: var(--color-primary);
+  background: #4CAF50;
   color: white;
   border: none;
   border-radius: 8px;
@@ -335,7 +349,7 @@ const handleSignup = async () => {
 }
 
 .login-link a {
-  color: var(--color-primary);
+  color: #4CAF50;
   font-weight: 600;
   text-decoration: none;
 }

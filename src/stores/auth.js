@@ -2,12 +2,30 @@ import { defineStore } from 'pinia'
 import authApi from '../api/auth'
 
 export const useAuthStore = defineStore('auth', {
-    state: () => ({
-        user: JSON.parse(localStorage.getItem('user')) || null,
-        token: localStorage.getItem('token') || null,
-        error: null,
-        loading: false
-    }),
+    state: () => {
+        let user = null
+        try {
+            const userStr = localStorage.getItem('user')
+            if (userStr && userStr !== 'undefined') {
+                user = JSON.parse(userStr)
+            }
+        } catch (e) {
+            console.error('Error parsing user from localStorage:', e)
+            localStorage.removeItem('user')
+        }
+        let token = localStorage.getItem('token')
+        if (token === 'undefined') {
+            token = null
+            localStorage.removeItem('token')
+        }
+
+        return {
+            user,
+            token: token || null,
+            error: null,
+            loading: false
+        }
+    },
     getters: {
         isAuthenticated: (state) => !!state.token
     },
@@ -79,5 +97,33 @@ export const useAuthStore = defineStore('auth', {
                 this.loading = false
             }
         },
+        async fetchProfile() {
+            try {
+                const response = await authApi.getProfile()
+                if (response.data.status === 200) {
+                    this.user = { ...this.user, ...response.data.data }
+                    localStorage.setItem('user', JSON.stringify(this.user))
+                }
+            } catch (error) {
+                console.error('Failed to fetch profile:', error)
+            }
+        },
+        async updateProfile(data) {
+            this.loading = true
+            try {
+                const response = await authApi.updateProfile(data)
+                if (response.data.status === 200) {
+                    // After successful update, fetch fresh profile data
+                    await this.fetchProfile()
+                    return true
+                }
+                return false
+            } catch (error) {
+                console.error('Update profile failed:', error)
+                throw error
+            } finally {
+                this.loading = false
+            }
+        }
     }
 })

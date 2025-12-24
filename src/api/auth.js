@@ -44,5 +44,33 @@ export default {
             averagePace: data.averagePace,
             activityRegion: data.region
         })
+    },
+    getProfile() {
+        return api.get('/api/v1/user/mypage')
+    },
+    updateProfile(data) {
+        const formData = new FormData()
+
+        // Create request object matching backend UserUpdateRequest
+        const requestData = {
+            nickname: data.nickname,
+            gender: data.gender === 'male' ? 'MALE' : (data.gender === 'female' ? 'FEMALE' : data.gender),
+            birthDate: data.birthdate,
+            averagePace: data.pace,
+            activityRegion: data.region
+        }
+
+        const jsonBlob = new Blob([JSON.stringify(requestData)], { type: "application/json" })
+        formData.append("request", jsonBlob)
+
+        if (data.profileImage) {
+            formData.append("profileImage", data.profileImage)
+        }
+
+        return api.put('/api/v1/user/edit/mypage', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data'
+            }
+        })
     }
 }

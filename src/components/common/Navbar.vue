@@ -15,22 +15,12 @@ const crewStore = useCrewStore()
 const isMobileMenuOpen = ref(false)
 
 const notifications = computed(() => crewStore.notifications)
-const unreadNotifications = computed(() => notifications.value.length)
+const unreadNotifications = computed(() => crewStore.unreadCount)
 
 onMounted(() => {
   crewStore.fetchNotifications()
+  crewStore.fetchUnreadCount()
 })
-
-const formatTime = (time) => {
-  const date = dayjs(time)
-  const now = dayjs()
-  const diffDays = now.diff(date, 'day')
-
-  if (diffDays >= 3) {
-    return date.format('MM.DD')
-  }
-  return date.fromNow()
-}
 
 const handleCommand = async (command) => {
   if (command === 'logout') {
@@ -53,6 +43,11 @@ const handleCrewCommand = (command) => {
 
 const toggleMobileMenu = () => {
   isMobileMenuOpen.value = !isMobileMenuOpen.value
+}
+
+const handleViewAllNotifications = async () => {
+  await crewStore.markAllNotificationsRead()
+  router.push('/notifications')
 }
 </script>
 
@@ -106,12 +101,12 @@ const toggleMobileMenu = () => {
                 <div class="notification-content">
                   <div class="noti-top">
                     <span class="noti-crew">{{ item.crewName }}</span>
-                    <span class="noti-time">{{ formatTime(item.time) }}</span>
+                    <span class="noti-time">{{ item.relativeTime }}</span>
                   </div>
-                  <p class="notification-title">{{ item.title }}</p>
+                  <p class="notification-title">{{ item.content }}</p>
                 </div>
               </el-dropdown-item>
-              <el-dropdown-item divided class="view-all" @click="router.push('/notifications')">
+              <el-dropdown-item divided class="view-all" @click="handleViewAllNotifications">
                 <span>모두 보기 →</span>
               </el-dropdown-item>
             </el-dropdown-menu>
