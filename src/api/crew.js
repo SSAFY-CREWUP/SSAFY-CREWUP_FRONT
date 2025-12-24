@@ -18,7 +18,7 @@ const generateMockCrews = (count) => {
     return Array.from({ length: count }, (_, i) => {
         const age = ageOptions[Math.floor(Math.random() * ageOptions.length)]
         const gender = genderOptions[Math.floor(Math.random() * genderOptions.length)]
-        
+
         return {
             id: i + 1,
             name: `Run Crew ${i + 1}`,
@@ -54,7 +54,7 @@ const mockVoteData = [
         allowMultiple: false,
         isAnonymous: false,
         status: 'progress',
-        participants: [{ id: 999, name: '나(Me)', status: 'pending', votedAt: '2024-12-20 10:00:00.123' }] 
+        participants: [{ id: 999, name: '나(Me)', status: 'pending', votedAt: '2024-12-20 10:00:00.123' }]
     },
     {
         id: 2,
@@ -227,22 +227,7 @@ export default {
         })
     },
     getMembers(crewId) {
-        return new Promise((resolve) => {
-            setTimeout(() => {
-                const roles = ['크루장', '매니저', '정회원']
-                const members = Array.from({ length: 20 }, (_, i) => ({
-                    id: i + 1,
-                    name: `Member ${i + 1}`,
-                    role: i === 0 ? '크루장' : (i < 3 ? '매니저' : '정회원'),
-                    attendance: `${Math.floor(Math.random() * 10)}/10`,
-                    distance: `${Math.floor(Math.random() * 100)}km`,
-                    pace: `${Math.floor(Math.random() * 4) + 4}:${Math.floor(Math.random() * 60).toString().padStart(2, '0')}`,
-                    joinDate: '2024-01-15',
-                    image: `https://picsum.photos/seed/mem${i}/50/50`
-                }))
-                resolve({ data: members })
-            }, 500)
-        })
+        return api.get(`/api/v1/crew/${crewId}/members`)
     },
     updateMemberRole(crewId, memberId, role) {
         return new Promise((resolve) => {
@@ -685,7 +670,6 @@ export default {
     closeVote(crewId, voteId) {
         return api.post(`/api/v1/vote/${voteId}/close`)
     },
-    // Notifications API
     // Notifications API
     getNotifications() {
         return api.get('/api/v1/notification/list')
