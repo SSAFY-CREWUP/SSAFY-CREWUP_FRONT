@@ -143,7 +143,9 @@ export default {
         }).then(response => {
             // Backend currently returns List, not Page. Adapt to frontend expectation.
             const list = response.data.data || []
-            const mappedList = list.map(item => ({
+            const mappedList = list.map(item => {
+                console.log('Crew Search API Item:', item) // Debug Log
+                return {
                 id: item.crewId,
                 name: item.name,
                 location: item.region,
@@ -151,8 +153,18 @@ export default {
                 image: item.crewImage,
                 activityTime: item.activityTime,
                 pace: (item.averagePace !== null && item.averagePace !== undefined) ? `${item.averagePace}` : 'N/A', // Format as string if needed, or component handles number
-                memberInfo: item.ageGroup ? `${item.ageGroup}` : '모집중'
-            }))
+                memberInfo: item.ageGroup ? `${item.ageGroup}` : '모집중',
+                ageRange: item.ageGroup ? `${item.ageGroup}` : '전연령',
+                genderLimit: (() => {
+                    // Backend returns snake_case 'gender_limit' with values '모두', '남성', '여성' (or English)
+                    const val = item.gender_limit || item.genderLimit || ''
+                    const g = val.toUpperCase()
+                    if (['MALE', '남성', '남자', 'MAN', 'M'].some(v => g.includes(v))) return '남성'
+                    if (['FEMALE', '여성', '여자', 'WOMAN', 'F', 'W'].some(v => g.includes(v))) return '여성'
+                    return '모두' // Default
+                })() 
+                }
+            })
             return {
                 data: {
                     content: mappedList,

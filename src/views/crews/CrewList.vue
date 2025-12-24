@@ -220,13 +220,13 @@ useIntersectionObserver(
 /* Hero Section */
 .hero-section {
   position: relative;
-  height: 300px; /* Reduced height */
+  height: 420px; /* Restored & Increased for grandeur */
   background: radial-gradient(circle at center, #2e3458 0%, #1e2040 60%, #0f1020 100%);
   display: flex;
   justify-content: center;
   align-items: center;
   overflow: hidden;
-  margin-bottom: -50px; /* More overlap */
+  margin-bottom: -60px; /* Stronger overlap */
   padding-top: 60px; /* Navbar space */
 }
 
@@ -375,20 +375,30 @@ useIntersectionObserver(
 .count-value { font-size: 1.1rem; color: #1e1b4b; font-weight: 800; }
 
 .sort-controls {
-  display: flex; gap: 8px;
+  display: flex; gap: 12px;
 }
 .sort-pill {
   background: white; border: 1px solid #e2e8f0;
-  padding: 8px 16px; border-radius: 20px;
-  color: #64748b; font-weight: 600; font-size: 0.9rem;
-  cursor: pointer; transition: all 0.2s;
-  display: flex; align-items: center; gap: 4px;
+  padding: 10px 20px; border-radius: 30px;
+  color: #64748b; font-weight: 700; font-size: 0.95rem;
+  cursor: pointer; transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+  display: flex; align-items: center; gap: 6px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.05); /* Initial lift */
 }
-.sort-pill:hover { background: #f1f5f9; color: #334155; }
+.sort-pill:hover {
+  background: #f8fafc; color: #334155;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+}
 .sort-pill.active {
-  background: #EEF2FF; color: #4F46E5; border-color: #6366F1;
+  background: linear-gradient(135deg, #EEF2FF 0%, #E0E7FF 100%);
+  color: #4F46E5; border-color: #818CF8;
+  box-shadow: 0 6px 12px rgba(99, 102, 241, 0.2);
 }
-.arrow { font-size: 0.8rem; font-weight: 800; }
+.sort-pill.active:hover {
+  box-shadow: 0 10px 20px rgba(99, 102, 241, 0.3);
+}
+.arrow { font-size: 0.9rem; font-weight: 800; color: inherit; }
 
 /* Grid */
 .crew-grid {
