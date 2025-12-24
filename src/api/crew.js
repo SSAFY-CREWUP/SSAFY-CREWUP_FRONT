@@ -653,6 +653,7 @@ export default {
                 maxParticipants: v.limitCount || 100,
                 status: v.status || (v.isClosed ? 'closed' : 'progress'),
                 // For preview details, we might need to fetch individual, but list displays minimal info
+                hasVoted: v.hasVoted, // Map hasVoted from backend
                 participants: Array(v.participantCount || 0).fill({}), 
                 allowMultiple: v.multipleChoice || false,
                 isAnonymous: v.isAnonymous || false,

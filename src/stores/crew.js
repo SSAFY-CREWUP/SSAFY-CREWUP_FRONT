@@ -209,8 +209,8 @@ export const useCrewStore = defineStore('crew', {
             const res = await crewApi.getVotes(crewId)
             return res.data
         },
-        async castVote(crewId, voteId) {
-            await crewApi.castVote(crewId, voteId)
+        async castVote(crewId, voteId, ids) {
+            await crewApi.castVote(crewId, voteId, ids)
         },
         async confirmParticipant(crewId, voteId, userId) {
             await crewApi.confirmParticipant(crewId, voteId, userId)
