@@ -180,8 +180,8 @@ export const useCrewStore = defineStore('crew', {
                 const requestData = {
                     courseId: eventData.courseId,
                     title: eventData.title,
-                    // Combine date and time (e.g., "2025-12-26T20:00:00")
-                    runDate: `${eventData.date}T${eventData.time}:00`,
+                    // Combine date and time (e.g., "2025-12-26 20:00:00")
+                    runDate: `${eventData.date} ${eventData.time}:00`,
                     location: eventData.location,
                     maxPeople: eventData.maxParticipants,
                     content: eventData.content,
