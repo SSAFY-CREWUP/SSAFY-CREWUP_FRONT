@@ -1,8 +1,12 @@
 <script setup>
 import { ref, onMounted, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { StarFilled, EditPen, Star, UserFilled } from '@element-plus/icons-vue'
+import { 
+  StarFilled, EditPen, Star, UserFilled, Camera, Close, Picture,
+  Document, MagicStick, ChatLineRound, TrendCharts, Timer
+} from '@element-plus/icons-vue'
 import { useKakaoMap } from '../../composables/useKakaoMap'
+import { useAuthStore } from '../../stores/auth' // Import Auth Store
 import courseApi from '../../api/course' // Import real API
 
 const props = defineProps({
@@ -17,7 +21,38 @@ const props = defineProps({
 })
 
 const showReviewForm = ref(false)
-const newReview = ref({ rating: 5, content: '' })
+const newReview = ref({ rating: 5, difficulty: 3, content: '' })
+const reviewImageFile = ref(null)
+const reviewImagePreview = ref(null)
+const fileInput = ref(null)
+
+const triggerFileUpload = () => {
+  fileInput.value.click()
+}
+
+const handleFileChange = (event) => {
+  const file = event.target.files[0]
+  if (file) {
+    if (file.size > 5 * 1024 * 1024) {
+      alert('이미지 크기는 5MB 이하여야 합니다.')
+      return
+    }
+    reviewImageFile.value = file
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      reviewImagePreview.value = e.target.result
+    }
+    reader.readAsDataURL(file)
+  }
+}
+
+const clearReviewImage = () => {
+  reviewImageFile.value = null
+  reviewImagePreview.value = null
+  if (fileInput.value) fileInput.value.value = ''
+}
+
+// Pagination refs removed as per user request
 
 const localCourse = ref(null) // Data fetched from API
 
@@ -28,6 +63,10 @@ watch(() => props.course, (newVal) => {
   }
 }, { immediate: true })
 
+// fetchReviews removed, moved to fetchDetail
+
+// handlePageChange removed
+
 const submitReview = async () => {
   if (!newReview.value.content.trim()) return
   
@@ -35,17 +74,24 @@ const submitReview = async () => {
     const formData = new FormData()
     formData.append('data', new Blob([JSON.stringify({
       rating: newReview.value.rating,
+      difficultyScore: newReview.value.difficulty,
       content: newReview.value.content
     })], { type: 'application/json' }))
     
     // If image support is needed later: formData.append('image', file)
-
+    if (reviewImageFile.value) {
+      formData.append('image', reviewImageFile.value)
+    }
+ 
     await courseApi.createReview(props.course.courseId, formData)
     
     alert('후기가 등록되었습니다.')
     newReview.value.content = ''
+    newReview.value.difficulty = 3 // Reset to Normal
+    clearReviewImage() // Reset Image
     showReviewForm.value = false
     
+    // Refresh detail to show new review
     // Refresh detail to show new review
     fetchDetail()
   } catch (error) {
@@ -66,6 +112,34 @@ const dialogVisible = computed({
 const mapContainer = ref(null)
 let map = null
 const { loadKakaoMap } = useKakaoMap()
+const authStore = useAuthStore() // Use Auth Store
+
+const myPaceSeconds = computed(() => {
+  if (!authStore.user || !authStore.user.averagePace) return null
+  const p = authStore.user.averagePace
+  // Parse "MM'SS"" or "MM:SS"
+  try {
+     const parts = p.replace(/"/g, '').split(/[':]/)
+     if (parts.length >= 2) {
+       return parseInt(parts[0]) * 60 + parseInt(parts[1])
+     }
+  } catch (e) {
+    console.error('Pace parse error:', e)
+  }
+  return null
+})
+
+// Helper to calculate left position % (8'00" -> 0%, 4'00" -> 100%)
+const getPacePosition = (seconds) => {
+  if (!seconds) return 0
+  const slowest = 480 // 8 min
+  const fastest = 240 // 4 min
+  
+  if (seconds >= slowest) return 0
+  if (seconds <= fastest) return 100
+  
+  return ((slowest - seconds) / (slowest - fastest)) * 100
+}
 
 // Helper to parse POINT(lng lat)
 const parseWktToLatLng = (wkt) => {
@@ -102,18 +176,27 @@ const fetchDetail = async () => {
     }
 
     localCourse.value = data
-
-    // 2. Fetch Reviews
+  
+    // 2. Fetch Reviews (Restored Simple Fetch)
     const reviewResponse = await courseApi.getReviewList(props.course.courseId)
-    // Map response to match UI fields if necessary (assuming CourseReviewResponse matches UI expectations or simple mapping)
-    // CourseReviewResponse: reviewId, content, rating, writerNickname, createdDate, reviewImage
-    localCourse.value.reviews = reviewResponse.data.data.map(r => ({
+    // Handle potential PageResponse vs List (just in case backend is mixed)
+    // But since we are rolling back to 'before', we assume List or we extract content if PageResponse
+    let rawReviews = []
+    if (Array.isArray(reviewResponse.data.data)) {
+        rawReviews = reviewResponse.data.data
+    } else if (reviewResponse.data.data && Array.isArray(reviewResponse.data.data.content)) {
+         rawReviews = reviewResponse.data.data.content
+    }
+
+    localCourse.value.reviews = rawReviews.map(r => ({
       id: r.reviewId,
       user: r.writerNickname,
       rating: r.rating,
       content: r.content,
-      date: r.createdDate ? r.createdDate.split('T')[0] : '', // Format date
-      image: r.reviewImage
+      date: r.createdDate ? r.createdDate.split('T')[0] : (r.createdAt ? r.createdAt.split('T')[0] : ''),
+      image: r.reviewImage || r.image,
+      writerProfileImage: r.writerProfileImage,
+      isMyReview: r.isMyReview
     }))
 
   } catch (error) {
@@ -267,22 +350,85 @@ const getDifficultyColor = (diff) => {
         </div>
 
         <div class="detail-tags">
-          <el-tag effect="dark" :color="getDifficultyColor(localCourse.difficulty)" style="border:none; color:white;">
-            {{ localCourse.difficulty }}
-          </el-tag>
-          <el-tag effect="plain">{{ formatDistance(localCourse.distance) }}</el-tag>
-          <el-tag effect="plain">⏱ {{ localCourse.expectedTime }}분</el-tag>
+          <!-- Difficulty Spectrum Bar -->
+          <div class="spectrum-box difficulty-spectrum-box">
+             <div class="spectrum-header">
+               <span class="spectrum-title"><el-icon><TrendCharts /></el-icon> 체감 난이도</span>
+             </div>
+             <div class="spectrum-bar difficulty-bar">
+                <div class="spectrum-track"></div>
+                <!-- Labels -->
+                 <span class="track-label label-easy">EASY</span>
+                 <span class="track-label label-hard">HARD</span>
+                
+                <!-- AVG Marker -->
+                <div 
+                  class="spectrum-indicator" 
+                  v-if="localCourse.avgDifficultyScore"
+                  :style="{ left: ((localCourse.avgDifficultyScore - 1) / 4 * 100) + '%' }"
+                >
+                  <div class="indicator-bubble">AVG</div>
+                  <div class="indicator-line"></div>
+                  <div class="indicator-dot"></div>
+                </div>
+             </div>
+             <div class="spectrum-value">
+                평균 {{ localCourse.avgDifficultyScore ? localCourse.avgDifficultyScore.toFixed(1) : '?' }} / 5.0
+             </div>
+          </div>
+
+          <!-- Pace Spectrum Bar -->
+          <div class="spectrum-box pace-spectrum-box">
+             <div class="spectrum-header">
+               <span class="spectrum-title"><el-icon><Timer /></el-icon> 평균 페이스</span>
+             </div>
+             <div class="spectrum-bar pace-bar">
+                <div class="spectrum-track"></div>
+                 <!-- Labels with Icons -->
+                 <span class="track-label label-start">
+                    🐢 8'00"
+                 </span>
+                 <span class="track-label label-end">
+                    🐆 4'00"
+                 </span>
+
+                <!-- AVG Marker -->
+                <div 
+                  class="spectrum-indicator"
+                  v-if="localCourse.avgPaceSeconds"
+                  :style="{ left: getPacePosition(localCourse.avgPaceSeconds) + '%' }"
+                >
+                  <div class="indicator-bubble">AVG</div>
+                  <div class="indicator-line"></div>
+                  <div class="indicator-dot"></div>
+                </div>
+
+                <!-- ME Marker -->
+                <div 
+                  class="spectrum-indicator my-indicator"
+                  v-if="myPaceSeconds"
+                  :style="{ left: getPacePosition(myPaceSeconds) + '%' }"
+                >
+                  <div class="indicator-bubble me-bubble">ME</div>
+                  <div class="indicator-line me-line"></div>
+                  <div class="indicator-dot me-dot"></div>
+                </div>
+             </div>
+             <div class="spectrum-value">
+                기록 {{ localCourse.avgPace ? localCourse.avgPace : '정보 없음' }}
+             </div>
+          </div>
         </div>
       </div>
       <!-- Course Description (User provided) -->
       <div class="section-box" v-if="localCourse.description">
-        <h3>📝 코스 설명</h3>
+        <h3><el-icon><Document /></el-icon> 코스 설명</h3>
         <p class="description-text">{{ localCourse.description }}</p>
       </div>
       
       <!-- AI Summary -->
       <div class="section-box" v-if="localCourse.aiSummary">
-        <h3>🤖 AI 후기 요약</h3>
+        <h3><el-icon><MagicStick /></el-icon> AI 후기 요약</h3>
         <p class="ai-summary-text">
           {{ localCourse.aiSummary }}
         </p>
@@ -309,9 +455,9 @@ const getDifficultyColor = (diff) => {
 
       <div class="section-box">
         <div class="reviews-title-row">
-          <h3>💬 코스 후기 ({{ localCourse.reviews ? localCourse.reviews.length : 0 }})</h3>
+          <h3><el-icon><ChatLineRound /></el-icon> 코스 후기</h3>
           <button 
-            v-if="localCourse.isScrapped" 
+            v-if="!localCourse.isMyCourse" 
             class="btn-write-review"
             @click="showReviewForm = !showReviewForm"
           >
@@ -324,6 +470,43 @@ const getDifficultyColor = (diff) => {
           <div class="form-rating">
             <span>나의 평점:</span>
             <el-rate v-model="newReview.rating" />
+          </div>
+          
+          <!-- Difficulty Slider -->
+          <div class="form-rating">
+             <span>체감 난이도:</span>
+             <el-slider 
+               v-model="newReview.difficulty" 
+               :min="1" 
+               :max="5" 
+               :step="1" 
+               show-stops
+               style="width: 150px; margin-left: 10px;"
+             />
+             <span style="font-size:0.85rem; margin-left:8px; color:#666;">
+               (1: 쉬움 ~ 5: 어려움)
+             </span>
+          </div>
+
+          <!-- Image Upload -->
+          <div class="image-upload-box">
+             <div class="upload-btn" @click="triggerFileUpload">
+                <el-icon><Camera /></el-icon> 사진 추가
+             </div>
+             <input 
+               type="file" 
+               ref="fileInput" 
+               accept="image/*" 
+               style="display: none" 
+               @change="handleFileChange" 
+             />
+             
+             <div v-if="reviewImagePreview" class="preview-container">
+               <img :src="reviewImagePreview" class="preview-img" />
+               <div class="remove-btn" @click.stop="clearReviewImage">
+                 <el-icon><Close /></el-icon>
+               </div>
+             </div>
           </div>
           <el-input 
             v-model="newReview.content" 
@@ -338,10 +521,12 @@ const getDifficultyColor = (diff) => {
           </div>
         </div>
         
+        
         <ul class="review-list" v-if="localCourse.reviews && localCourse.reviews.length > 0">
           <li v-for="review in localCourse.reviews" :key="review.id" class="review-item">
             <div class="review-header">
               <div class="user-row">
+                 <el-avatar :size="24" :src="review.writerProfileImage" :icon="UserFilled" />
                  <span class="review-user">{{ review.user }}</span>
                  <div class="mini-rating">
                    <el-icon color="#FFD700" :size="14"><StarFilled /></el-icon>
@@ -350,15 +535,19 @@ const getDifficultyColor = (diff) => {
               </div>
               <span class="review-date">{{ review.date }}</span>
             </div>
-            
             <p class="review-content">{{ review.content }}</p>
-            
-            <div class="review-image" v-if="review.image">
-              <img :src="review.image" alt="Review Image" />
+            <div v-if="review.image" class="review-image">
+               <img :src="review.image" alt="review" />
             </div>
           </li>
         </ul>
-        <p v-else class="no-reviews">아직 후기가 없습니다.</p>
+        <div v-else class="no-reviews">
+          <p>등록된 후기가 없습니다. 첫 후기를 남겨보세요!</p>
+        </div>
+
+        <!-- Pagination -->
+        <!-- Pagination Removed -->
+
       </div>
     </div>
   </el-dialog>
@@ -589,75 +778,197 @@ const getDifficultyColor = (diff) => {
   font-size: 0.9rem;
 }
 
-.reviews-title-row {
+
+/* Spectrum Bar Styles */
+.detail-tags {
+  display: flex;
+  flex-direction: column; /* Stack vertically now */
+  gap: 16px;
+  width: 100%;
+  margin-top: 10px;
+}
+
+.spectrum-box {
+  background: white;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  padding: 12px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.03);
+}
+
+.spectrum-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 12px;
 }
 
-.reviews-title-row h3 {
-  margin: 0;
+.spectrum-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
-.btn-write-review {
+.spectrum-bar {
+  position: relative;
+  height: 24px;   /* Height for labels */
+  margin: 20px 0 10px 0; /* Space for top bubble */
+}
+
+.spectrum-track {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 6px;
+  border-radius: 3px;
+  transform: translateY(-50%);
+  background: #eee; /* Fallback */
+}
+
+.difficulty-bar .spectrum-track {
+  /* Neon Energy Gradient: Green -> Yellow -> Red */
+  background: linear-gradient(90deg, #00E676 0%, #FFEA00 50%, #FF1744 100%);
+}
+
+.pace-bar .spectrum-track {
+   /* Neon Energy Gradient: Green -> Yellow -> Red */
+  background: linear-gradient(90deg, #00E676 0%, #FFEA00 50%, #FF1744 100%);
+}
+
+.track-label {
+  position: absolute;
+  top: 14px; /* Below track */
+  font-size: 10px;
+  color: #999;
+  font-weight: 600;
+}
+
+.label-easy { left: 0; }
+.label-hard { right: 0; }
+.label-start { left: 0; display:flex; gap:2px; }
+.label-end { right: 0; display:flex; gap:2px; }
+
+.spectrum-value {
+  text-align: right;
+  font-size: 0.85rem;
+  color: var(--color-text-primary);
+  font-weight: 600;
+}
+
+/* Indicators */
+.spectrum-indicator {
+  position: absolute;
+  top: 50%; 
+  transform: translate(-50%, -50%); /* Centered on position */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 2;
+  top: -12px; /* Pull up to sit on track */
+}
+
+.indicator-bubble {
+  background: var(--color-text-primary);
+  color: white;
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 10px;
+  margin-bottom: 2px;
+  font-weight: bold;
+  white-space: nowrap;
+}
+
+.indicator-line {
+  width: 2px;
+  height: 14px;
+  background: var(--color-text-primary);
+}
+
+.indicator-dot {
+  width: 8px;
+  height: 8px;
   background: white;
-  border: 1px solid var(--color-primary);
-  color: var(--color-primary);
-  padding: 4px 10px;
-  border-radius: 12px;
-  font-size: 0.8rem;
-  cursor: pointer;
+  border: 2px solid var(--color-text-primary);
+  border-radius: 50%;
+  margin-top: -1px;
+}
+
+/* My Marker: Below the track for differentiation */
+.my-indicator {
+  top: auto; 
+  bottom: -36px; /* Push down */
+  flex-direction: column-reverse;
+}
+
+.me-bubble {
+  background: var(--color-primary);
+  margin-bottom: 0;
+  margin-top: 2px;
+}
+
+.me-line {
+  background: var(--color-primary);
+}
+
+.me-dot {
+  border-color: var(--color-primary);
+}
+
+/* Image Upload Styles */
+.image-upload-box {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.upload-btn {
   display: flex;
   align-items: center;
   gap: 4px;
+  font-size: 0.85rem;
+  color: var(--color-primary);
+  border: 1px dashed var(--color-primary);
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
 }
-.btn-write-review:hover {
+.upload-btn:hover {
   background: #f0f9eb;
 }
-
-.review-form-container {
-  background: white;
-  padding: 12px;
-  border-radius: 8px;
-  border: 1px solid #eee;
-  margin-bottom: 16px;
+.preview-container {
+  position: relative;
+  width: 60px;
+  height: 60px;
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid #ddd;
 }
-
-.form-rating {
+.preview-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.remove-btn {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background: rgba(0,0,0,0.5);
+  color: white;
+  width: 18px;
+  height: 18px;
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
-  font-weight: 600;
-  font-size: 0.9rem;
-}
-
-.review-input {
-  margin-bottom: 8px;
-}
-
-.form-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-}
-
-.btn-cancel, .btn-submit {
-  border: none;
-  border-radius: 4px;
-  padding: 6px 12px;
+  justify-content: center;
   cursor: pointer;
-  font-size: 0.85rem;
 }
 
-.btn-cancel {
-  background: #f5f5f5;
-  color: #666;
-}
-
-.btn-submit {
-  background: var(--color-primary);
-  color: white;
+.pagination-wrapper {
+  margin-top: var(--space-4);
+  display: flex;
+  justify-content: center;
 }
 </style>

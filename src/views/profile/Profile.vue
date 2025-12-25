@@ -14,8 +14,8 @@ import {
 import { ElMessage } from 'element-plus'
 
 // New Components
-// import MyCourseList from '../../components/profile/MyCourseList.vue'
-// import ScrappedCourseList from '../../components/profile/ScrappedCourseList.vue'
+import MyCourseList from '../../components/profile/MyCourseList.vue'
+import ScrappedCourseList from '../../components/profile/ScrappedCourseList.vue'
 
 const authStore = useAuthStore()
 const router = useRouter()
@@ -279,7 +279,6 @@ onMounted(() => {
         >
           내 정보
         </button>
-        <!-- 
         <button 
           class="tab-item" 
           :class="{ active: activeTab === 'my_courses' }" 
@@ -293,8 +292,7 @@ onMounted(() => {
           @click="activeTab = 'scrapped'"
         >
           스크랩
-        </button> 
-        -->
+        </button>
       </div>
 
       <!-- Tab Content -->
@@ -325,18 +323,14 @@ onMounted(() => {
         </div>
 
         <!-- 2. My Created Courses -->
-        <!-- 
         <div v-if="activeTab === 'my_courses'" class="component-tab">
            <MyCourseList />
         </div>
-        -->
 
         <!-- 3. Scrapped Courses -->
-        <!-- 
         <div v-if="activeTab === 'scrapped'" class="component-tab">
            <ScrappedCourseList />
-        </div> 
-        -->
+        </div>
 
       </div>
 
