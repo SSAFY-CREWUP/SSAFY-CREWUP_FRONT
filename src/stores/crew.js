@@ -49,6 +49,15 @@ export const useCrewStore = defineStore('crew', {
             await crewApi.rejectRequest(crewId, requestId, reason)
             this.requests = this.requests.filter(r => r.id !== requestId)
         },
+        async fetchRecommendedCrews() {
+            try {
+                const res = await crewApi.getRecommendedCrews()
+                return res.data
+            } catch (error) {
+                console.error('Failed to fetch recommended crews:', error)
+                return []
+            }
+        },
         async fetchMembers(crewId) {
             this.loading = true
             try {

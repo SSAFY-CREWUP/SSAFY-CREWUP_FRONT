@@ -1,14 +1,21 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useIntersectionObserver } from '@vueuse/core'
+import { useCrewStore } from '../../stores/crew'
+import { useAuthStore } from '../../stores/auth'
 import crewApi from '../../api/crew'
 import CrewCard from '../../components/crew/CrewCard.vue'
 import CrewFilter from '../../components/crew/CrewFilter.vue'
 import Loading from '../../components/common/Loading.vue'
-import { Search, InfoFilled } from '@element-plus/icons-vue'
+import { Search, InfoFilled, MagicStick } from '@element-plus/icons-vue'
 
 // State
+// State
+const crewStore = useCrewStore()
+const authStore = useAuthStore()
 const crews = ref([])
+const recommendedCrews = ref([]) // 추천 크루
+const viewTab = ref('all') // 'all' | 'rec'
 const loading = ref(false)
 const page = ref(1)
 const hasMore = ref(true)
@@ -34,8 +41,10 @@ const handleMouseMove = (e) => {
   mouseY.value = (e.clientY - innerHeight / 2) / 20
 }
 
-onMounted(() => {
+onMounted(async () => {
   fetchCrews(true)
+  // 추천 크루 조회
+  recommendedCrews.value = await crewStore.fetchRecommendedCrews()
   window.addEventListener('mousemove', handleMouseMove)
 })
 
@@ -165,12 +174,20 @@ useIntersectionObserver(
       <main class="main-area">
         <!-- List Header -->
         <div class="list-header">
-          <div class="count-badge">
-            <span class="count-label">전체 크루</span>
-            <span class="count-value">{{ totalElements }}</span>
+          <div class="header-tabs">
+             <button class="tab-btn" :class="{ active: viewTab === 'all' }" @click="viewTab = 'all'">
+                <span class="tab-label">전체 크루</span>
+                <span class="tab-count">{{ totalElements }}</span>
+             </button>
+             <div class="tab-divider"></div>
+             <button class="tab-btn rec-tab" :class="{ active: viewTab === 'rec' }" @click="viewTab = 'rec'">
+                <el-icon><MagicStick /></el-icon>
+                <span class="tab-label">AI 맞춤 추천</span>
+                <span class="tab-count">{{ recommendedCrews.length }}</span>
+             </button>
           </div>
 
-          <div class="sort-controls">
+          <div class="sort-controls" v-if="viewTab === 'all'">
             <button 
               v-for="type in ['latest', 'popular', 'pace']"
               :key="type"
@@ -187,17 +204,31 @@ useIntersectionObserver(
         </div>
 
         <!-- Crew Grid -->
-        <div v-if="crews.length > 0" class="crew-grid">
-          <CrewCard v-for="crew in crews" :key="crew.id" :crew="crew" />
-        </div>
+        <transition name="fade" mode="out-in">
+           <div v-if="viewTab === 'rec'" key="rec-grid" class="crew-grid">
+               <div v-if="recommendedCrews.length === 0" class="empty-rec">
+                   <p>아직 추천할 크루가 없어요 😢</p>
+               </div>
+               <div v-else v-for="crew in recommendedCrews" :key="crew.id" class="rec-card-wrapper">
+                 <CrewCard :crew="crew" />
+                 <div class="match-score-badge">
+                    <span class="score-val">{{ crew.matchScore }}점</span>
+                 </div>
+               </div>
+           </div>
 
-        <!-- Empty State -->
-        <div v-else-if="!loading" class="empty-state">
-          <div class="empty-icon-wrapper">
-            <el-icon :size="48"><InfoFilled /></el-icon>
-          </div>
-          <p>조건에 맞는 크루를 찾지 못했어요.<br>검색 조건을 변경해보세요.</p>
-        </div>
+           <div v-else-if="crews.length > 0" key="all-grid" class="crew-grid">
+             <CrewCard v-for="crew in crews" :key="crew.id" :crew="crew" />
+           </div>
+
+           <!-- Empty State -->
+           <div v-else-if="!loading" key="empty" class="empty-state">
+             <div class="empty-icon-wrapper">
+               <el-icon :size="48"><InfoFilled /></el-icon>
+             </div>
+             <p>조건에 맞는 크루를 찾지 못했어요.<br>검색 조건을 변경해보세요.</p>
+           </div>
+        </transition>
 
         <!-- Loading -->
         <div ref="loadMoreTrigger" class="loading-area">
@@ -436,6 +467,57 @@ useIntersectionObserver(
   .hero-section { height: 320px; }
   .main-area { margin-top: 20px; }
 }
+
+/* Header Tabs */
+.header-tabs {
+  display: flex; align-items: center; 
+  background: white; padding: 4px; border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.03);
+}
+.tab-btn {
+  display: flex; align-items: center; gap: 6px;
+  padding: 8px 16px; border-radius: 8px; border: none;
+  background: transparent; color: #64748b; font-weight: 600;
+  cursor: pointer; transition: all 0.2s; font-size: 0.9rem;
+}
+.tab-btn:hover { background: #f1f5f9; color: #1e293b; }
+.tab-btn.active {
+  background: #1e293b; color: white; box-shadow: 0 2px 6px rgba(30, 41, 59, 0.2);
+}
+.tab-btn.rec-tab.active {
+  background: linear-gradient(135deg, #6366F1, #8B5CF6);
+  box-shadow: 0 4px 10px rgba(99, 102, 241, 0.3);
+}
+.tab-count {
+  background: rgba(255,255,255,0.2); 
+  padding: 2px 8px; border-radius: 10px; font-size: 0.8rem;
+}
+.tab-btn:not(.active) .tab-count {
+  background: #e2e8f0; color: #64748b;
+}
+.tab-divider {
+  width: 1px; height: 16px; background: #cbd5e1; margin: 0 4px;
+}
+
+/* Match Score Badge for Grid items */
+.rec-card-wrapper { position: relative; }
+.match-score-badge {
+  position: absolute; top: 10px; right: 10px;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(4px);
+  border-radius: 12px; padding: 4px 10px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  z-index: 10;
+  display: flex; align-items: center; justify-content: center;
+  border: 1px solid rgba(255,255,255,0.5);
+}
+.score-val { font-size: 0.9rem; color: #ec4899; font-weight: 800; }
+
+/* Transitions */
+.fade-enter-active, .fade-leave-active { transition: opacity 0.3s ease; }
+.fade-enter-from, .fade-leave-to { opacity: 0; }
+
 @media (max-width: 600px) {
   .crew-grid { grid-template-columns: 1fr; }
   .list-header { flex-direction: column; align-items: flex-start; gap: 16px; }

@@ -730,6 +730,25 @@ export default {
     deleteNotification(notificationId) {
         return api.delete(`/api/v1/notification/${notificationId}`)
     },
+    getRecommendedCrews() {
+        return api.get('/api/v1/crew/recommended').then(response => {
+             const list = response.data.data || []
+             return {
+                 data: list.map(item => ({
+                     id: item.crewId,
+                     name: item.name,
+                     location: item.region,
+                     members: item.memberCount,
+                     image: item.crewImage,
+                     activityTime: item.activityTime,
+                     pace: (item.averagePace !== null && item.averagePace !== undefined) ? `${item.averagePace}` : 'N/A',
+                     ageRange: item.ageGroup ? `${item.ageGroup}` : '전연령',
+                     genderLimit: item.genderLimit || '무관',
+                     matchScore: item.matchScore || 0
+                 }))
+             }
+        })
+    },
     getMyCrews() {
         return api.get('/api/v1/crew/my').then(response => {
             const list = response.data.data || []
