@@ -8,4 +8,13 @@ const api = axios.create({
     withCredentials: true
 })
 
+// Request interceptor to add sessionId
+api.interceptors.request.use(config => {
+    const sessionId = localStorage.getItem('sessionId')
+    if (sessionId) {
+        config.headers['X-Session-Id'] = sessionId
+    }
+    return config
+})
+
 export default api

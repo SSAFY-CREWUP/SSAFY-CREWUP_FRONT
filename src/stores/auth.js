@@ -13,15 +13,16 @@ export const useAuthStore = defineStore('auth', {
             console.error('Error parsing user from localStorage:', e)
             localStorage.removeItem('user')
         }
-        let token = localStorage.getItem('token')
-        if (token === 'undefined') {
-            token = null
-            localStorage.removeItem('token')
+        // Use sessionId instead of token
+        let sessionId = localStorage.getItem('sessionId')
+        if (sessionId === 'undefined') {
+            sessionId = null
+            localStorage.removeItem('sessionId')
         }
 
         return {
             user,
-            token: token || null,
+            token: sessionId || null, // Map sessionId to token for compatibility
             error: null,
             loading: false
         }
@@ -35,15 +36,16 @@ export const useAuthStore = defineStore('auth', {
             this.error = null
             try {
                 const response = await authApi.login(credentials)
-                const { token, user, isNewUser } = response.data
+                // New structure: response.data.data.sessionId
+                const { sessionId, user } = response.data.data
 
-                this.token = token
+                this.token = sessionId
                 this.user = user
 
-                localStorage.setItem('token', token)
+                localStorage.setItem('sessionId', sessionId)
                 localStorage.setItem('user', JSON.stringify(user))
 
-                return { success: true, isNewUser }
+                return { success: true }
             } catch (error) {
                 this.error = error.message || 'Login failed'
                 return { success: false }
@@ -71,7 +73,7 @@ export const useAuthStore = defineStore('auth', {
             } finally {
                 this.user = null
                 this.token = null
-                localStorage.removeItem('token')
+                localStorage.removeItem('sessionId')
                 localStorage.removeItem('user')
             }
         },
@@ -81,11 +83,11 @@ export const useAuthStore = defineStore('auth', {
             try {
                 const response = await authApi.signup(userData)
 
-                if (response.data && response.data.token) {
-                    const { token, user } = response.data
-                    this.token = token
+                if (response.data && response.data.data && response.data.data.sessionId) {
+                    const { sessionId, user } = response.data.data
+                    this.token = sessionId
                     this.user = user
-                    localStorage.setItem('token', token)
+                    localStorage.setItem('sessionId', sessionId)
                     localStorage.setItem('user', JSON.stringify(user))
                 }
 

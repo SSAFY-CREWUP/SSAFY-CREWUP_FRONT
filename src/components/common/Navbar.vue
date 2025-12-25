@@ -31,8 +31,6 @@ const handleCommand = async (command) => {
     router.push('/login')
   } else if (command === 'profile') {
     router.push('/profile')
-  } else if (command === 'settings') {
-    router.push('/profile/settings')
   }
 }
 
@@ -125,7 +123,6 @@ const handleViewAllNotifications = async () => {
           <template #dropdown>
             <el-dropdown-menu>
               <el-dropdown-item command="profile">내 프로필</el-dropdown-item>
-              <el-dropdown-item command="settings">설정</el-dropdown-item>
               <el-dropdown-item divided command="logout">로그아웃</el-dropdown-item>
             </el-dropdown-menu>
           </template>
@@ -145,7 +142,6 @@ const handleViewAllNotifications = async () => {
       <RouterLink to="/courses" class="mobile-nav-link" @click="isMobileMenuOpen = false">코스</RouterLink>
       <div class="mobile-divider"></div>
       <RouterLink to="/profile" class="mobile-nav-link" @click="isMobileMenuOpen = false">내 프로필</RouterLink>
-      <RouterLink to="/profile/settings" class="mobile-nav-link" @click="isMobileMenuOpen = false">설정</RouterLink>
       <div class="mobile-nav-link logout" @click="handleCommand('logout'); isMobileMenuOpen = false">로그아웃</div>
     </div>
   </nav>
