@@ -43,7 +43,7 @@ const handleLogin = async () => {
   })
 
   if (result.success) {
-    ElMessage.success('환영합니다!')
+    // ElMessage.success('환영합니다!')
     if (result.isNewUser) {
       router.push('/onboarding')
     } else {

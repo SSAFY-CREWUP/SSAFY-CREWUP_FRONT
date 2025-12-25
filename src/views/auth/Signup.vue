@@ -76,7 +76,7 @@ const handleSignup = async () => {
   })
 
   if (success) {
-    ElMessage.success('회원가입 성공!')
+    // ElMessage.success('회원가입 성공!')
     router.push('/onboarding')
   } else {
     ElMessage.error(authStore.error || '회원가입에 실패했습니다.')
