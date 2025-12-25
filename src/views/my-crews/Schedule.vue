@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useCrewStore } from '../../stores/crew'
 import { Plus, Location, Clock, Delete, User } from '@element-plus/icons-vue'
@@ -30,8 +30,7 @@ onMounted(() => {
 })
 
 // Helper to get events for a specific date
-const getEventsForDate = (date) => {
-  const dateStr = date.toISOString().split('T')[0]
+const getEventsForDate = (dateStr) => {
   return events.value.filter(e => e.date === dateStr)
 }
 
@@ -41,19 +40,23 @@ const thisMonthEvents = computed(() => {
   const now = new Date()
   const currentMonth = now.getMonth()
   const currentYear = now.getFullYear()
-  const todayStr = now.toISOString().split('T')[0]
   
   return events.value
     .filter(e => {
-      const eventDate = new Date(e.date)
-      // Check if it's in the current month and year
-      const isCurrentMonth = eventDate.getMonth() === currentMonth && eventDate.getFullYear() === currentYear
-      // Check if it's today or future
-      const isFuture = e.date >= todayStr
+      // Robust local date parsing (YYYY-MM-DD -> y, m, d)
+      const [y, m, d] = e.date.split('-').map(Number)
       
-      return isCurrentMonth && isFuture
+      // Check if it's in the current month and year
+      // Month in JS Date is 0-indexed, so m-1
+      const isCurrentMonth = (m - 1) === currentMonth && y === currentYear
+      
+      return isCurrentMonth
     })
     .sort((a, b) => new Date(a.date) - new Date(b.date))
+})
+
+watch(() => route.params.id, (newId) => {
+  if (newId) fetchEvents()
 })
 
 // Permission Check (Mock)
@@ -151,7 +154,7 @@ const handleDetailClose = () => {
               </span>
               <div class="date-events">
                 <div 
-                  v-for="event in getEventsForDate(data.date)" 
+                  v-for="event in getEventsForDate(data.day)" 
                   :key="event.id"
                   class="mini-event-item"
                   :style="{ backgroundColor: getEventTypeColor(event.type) + '30', color: getEventTypeColor(event.type) }"
@@ -203,7 +206,6 @@ const handleDetailClose = () => {
                 <span class="participants">
                   <el-icon><User /></el-icon> {{ event.participants }} / {{ event.maxParticipants }}명
                 </span>
-                <p class="event-content">{{ event.content }}</p>
               </div>
             </div>
           </div>

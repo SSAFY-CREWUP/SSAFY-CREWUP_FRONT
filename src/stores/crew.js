@@ -152,18 +152,21 @@ export const useCrewStore = defineStore('crew', {
             try {
                 const response = await scheduleApi.getScheduleList(crewId)
                 // Filter out null/undefined events and map to view format
-                return response.data.data.map(event => ({
-                    id: event.scheduleId,
-                    title: event.title,
-                    date: event.runDate.split('T')[0],
-                    time: event.runDate.split('T')[1].substring(0, 5),
-                    location: event.location,
-                    participants: event.currentPeople,
-                    maxParticipants: event.maxPeople,
-                    content: event.content,
-                    members: event.members,
-                    type: event.scheduleType
-                }))
+                return response.data.data.map(event => {
+                    const runDateStr = event.runDate.replace(' ', 'T')
+                    return {
+                        id: event.scheduleId,
+                        title: event.title,
+                        date: runDateStr.split('T')[0],
+                        time: runDateStr.split('T')[1].substring(0, 5),
+                        location: event.location,
+                        participants: event.currentPeople,
+                        maxParticipants: event.maxPeople,
+                        content: event.content,
+                        members: event.members,
+                        type: event.scheduleType
+                    }
+                })
             } catch (error) {
                 console.error('Failed to fetch events:', error)
                 throw error
@@ -177,9 +180,8 @@ export const useCrewStore = defineStore('crew', {
                 const requestData = {
                     courseId: eventData.courseId,
                     title: eventData.title,
-                    // Combine date and time (e.g., "2025-12-26 20:00:00")
-                    // Note: User example used space, so we use space. If backend requires T, we can change it.
-                    runDate: `${eventData.date} ${eventData.time}:00`,
+                    // Combine date and time (e.g., "2025-12-26T20:00:00")
+                    runDate: `${eventData.date}T${eventData.time}:00`,
                     location: eventData.location,
                     maxPeople: eventData.maxParticipants,
                     content: eventData.content,

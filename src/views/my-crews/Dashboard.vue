@@ -125,12 +125,12 @@ const filteredUpcomingEvents = computed(() => {
   
   return dashboardData.value.upcomingEvents
     .filter(event => {
-      const eventDate = dayjs(`${event.date} ${event.time}`)
+      const eventDate = dayjs(`${event.date}T${event.time}`)
       return eventDate.isAfter(now)
     })
     .sort((a, b) => {
-      const dateA = dayjs(`${a.date} ${a.time}`)
-      const dateB = dayjs(`${b.date} ${b.time}`)
+      const dateA = dayjs(`${a.date}T${a.time}`)
+      const dateB = dayjs(`${b.date}T${b.time}`)
       return dateA.diff(dateB)
     })
     .slice(0, 3)
@@ -193,7 +193,7 @@ const formatPace = (pace) => {
                   <span><el-icon><Location /></el-icon> {{ event.location }}</span>
                 </div>
                 <div class="event-footer">
-                  <span class="participants">👥 {{ event.participants }}명 참여 중</span>
+                  <span class="participants">👥 {{ event.participants }} / {{ event.maxParticipants }}명</span>
                 </div>
               </div>
             </el-timeline-item>
