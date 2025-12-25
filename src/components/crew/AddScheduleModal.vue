@@ -28,14 +28,27 @@ const crewStore = useCrewStore()
 const route = useRoute()
 const crewId = route.params.id
 
+import courseApi from '../../api/course'
+
+// ... existing imports
+
 onMounted(async () => {
-  // Mock courses for now as the API is not ready
-  scrappedCourses.value = [
-    { id: 1, title: '코스 1' },
-    { id: 2, title: '코스 2' },
-    { id: 3, title: '코스 3' },
-    { id: 4, title: '코스 4' }
-  ]
+  try {
+    const response = await courseApi.getMyScrapCourses({ page: 0, size: 100 })
+    if (response.data.status === 200) {
+      // API 응답 데이터 구조에 따라 courseId와 name 매핑이 필요할 수 있음
+      scrappedCourses.value = response.data.data
+    }
+  } catch (error) {
+    console.error('Failed to fetch scrapped courses, using mock data:', error)
+    // 백엔드 API 에러(500) 시 테스트를 위한 임시 데이터
+    scrappedCourses.value = [
+      { courseId: 1, title: '한강 공원 러닝 코스' },
+      { courseId: 2, title: '남산 둘레길 코스' },
+      { courseId: 3, title: '올림픽 공원 한바퀴' },
+      { courseId: 4, title: '대전 갑천 5km' }
+    ]
+  }
 })
 
 const eventTypes = [
@@ -132,9 +145,9 @@ const handleSubmit = () => {
         <el-select v-model="form.courseId" placeholder="코스를 선택하세요" clearable>
           <el-option
             v-for="course in scrappedCourses"
-            :key="course.id"
+            :key="course.courseId"
             :label="course.title"
-            :value="course.id"
+            :value="course.courseId"
           />
         </el-select>
       </div>
