@@ -47,7 +47,19 @@ export const useAuthStore = defineStore('auth', {
 
                 return { success: true }
             } catch (error) {
-                this.error = error.message || 'Login failed'
+                if (error.response) {
+                    if (error.response.status === 404) {
+                        this.error = '가입되지 않은 이메일입니다.'
+                    } else if (error.response.status === 401) {
+                        this.error = '비밀번호가 일치하지 않습니다.'
+                    } else {
+                        // Fallback for other server errors
+                        this.error = '로그인에 실패했습니다. 다시 시도해주세요.'
+                    }
+                } else {
+                    // Network or other errors
+                    this.error = '서버와 통신할 수 없습니다.'
+                }
                 return { success: false }
             } finally {
                 this.loading = false
