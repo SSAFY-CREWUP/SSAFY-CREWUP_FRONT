@@ -124,6 +124,13 @@ useIntersectionObserver(
     }
   }
 )
+
+// Helper for Score Class
+const getScoreClass = (score) => {
+  if (score >= 70) return 'score-high'
+  if (score >= 50) return 'score-mid'
+  return 'score-low'
+}
 </script>
 
 <template>
@@ -211,7 +218,7 @@ useIntersectionObserver(
                </div>
                <div v-else v-for="crew in recommendedCrews" :key="crew.id" class="rec-card-wrapper">
                  <CrewCard :crew="crew" />
-                 <div class="match-score-badge">
+                 <div class="match-score-badge" :class="getScoreClass(crew.matchScore)">
                     <span class="score-val">{{ crew.matchScore }}점</span>
                  </div>
                </div>
@@ -504,15 +511,38 @@ useIntersectionObserver(
 .rec-card-wrapper { position: relative; }
 .match-score-badge {
   position: absolute; top: 10px; right: 10px;
-  background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(4px);
-  border-radius: 12px; padding: 4px 10px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  border-radius: 12px; padding: 6px 12px;
   z-index: 10;
   display: flex; align-items: center; justify-content: center;
-  border: 1px solid rgba(255,255,255,0.5);
+  font-weight: 800; font-size: 0.95rem;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
-.score-val { font-size: 0.9rem; color: #ec4899; font-weight: 800; }
+
+.match-score-badge.score-high {
+  background: linear-gradient(135deg, #F97316 0%, #EA580C 100%);
+  color: white;
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+.match-score-badge.score-high .score-val { color: white; }
+
+.match-score-badge.score-mid {
+  background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+  color: white;
+  box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+.match-score-badge.score-mid .score-val { color: white; }
+
+.match-score-badge.score-low {
+  background: rgba(241, 245, 249, 0.9);
+  color: #64748B;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  border: 1px solid #E2E8F0;
+}
+.match-score-badge.score-low .score-val { color: #64748B; }
+
+.score-val { color: inherit; }
 
 /* Transitions */
 .fade-enter-active, .fade-leave-active { transition: opacity 0.3s ease; }
