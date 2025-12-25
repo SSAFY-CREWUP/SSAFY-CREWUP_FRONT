@@ -449,6 +449,7 @@ const handleDetailClose = () => {
   cursor: pointer;
   position: relative;
   overflow: hidden;
+  flex-shrink: 0; /* Prevent compression */
 }
 
 .event-card:hover {
