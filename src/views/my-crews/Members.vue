@@ -17,6 +17,9 @@ const searchQuery = ref('')
 const activeSearch = ref('')
 const loading = ref(false)
 
+
+
+
 const fetchMembers = async () => {
   loading.value = true
   try {
@@ -67,40 +70,34 @@ const formatDate = (dateStr) => {
 
 // Application Management
 const approveMember = async (member) => {
+    const targetId = member.crewMemberId || member.id || member.memberId
+
+    if (!targetId) {
+        ElMessage.error('멤버 ID를 찾을 수 없습니다.')
+        return
+    }
+
     try {
-        await ElMessageBox.confirm(`${member.nickname}님의 가입을 승인하시겠습니까?`, '가입 승인', {
+        await ElMessageBox.confirm(`${member.nickname || member.name}님의 가입을 승인하시겠습니까?`, '가입 승인', {
             confirmButtonText: '승인',
             cancelButtonText: '취소',
             type: 'success',
-            customClass: 'premium-message-box'
+            customClass: 'premium-message-box',
+            confirmButtonClass: 'custom-confirm-btn',
+            cancelButtonClass: 'custom-cancel-btn'
         })
-        await crewStore.approveRequest(crewId, member.id || member.memberId) // Adjust based on API response structure
-        // Note: Store's approveRequest uses 'requestId', check if it maps to memberId or separate ID
-        // The api js mocks getRequests returning objects with 'id'. Real api uses memberId probably.
-        // Assuming wait-list item has a unique ID used for approval.
+        await crewStore.approveRequest(crewId, targetId) 
         ElMessage.success('승인되었습니다.')
         fetchMembers()
     } catch (e) {
-        if (e !== 'cancel') ElMessage.error('승인 처리 중 오류가 발생했습니다.')
+        if (e !== 'cancel') {
+            console.error(e)
+            ElMessage.error('승인 처리 중 오류가 발생했습니다.')
+        }
     }
 }
 
-const rejectMember = async (member) => {
-    try {
-        await ElMessageBox.confirm(`${member.nickname}님의 가입을 거절하시겠습니까?`, '가입 거절', {
-             confirmButtonText: '거절',
-             cancelButtonText: '취소',
-             type: 'warning',
-             customClass: 'premium-message-box'
-        })
-        // Simple reject without reason for now as per minimal UI, or add prompt if needed
-        await crewStore.rejectRequest(crewId, member.id || member.memberId)
-        ElMessage.success('거절되었습니다.')
-        fetchMembers()
-    } catch (e) {
-        if (e !== 'cancel') ElMessage.error('거절 처리 중 오류가 발생했습니다.')
-    }
-}
+
 </script>
 
 <template>
@@ -199,16 +196,10 @@ const rejectMember = async (member) => {
                          <img :src="req.profileImage || 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'" class="req-img" />
                          <div class="req-info">
                              <div class="req-name">{{ req.nickname || req.name }}</div>
-                             <div class="req-meta">{{ req.location }} · {{ req.age }}세</div>
+                             <!-- Age removed as requested -->
                          </div>
                     </div>
-                    <div class="req-message">
-                        "{{ req.message || '가입하고 싶습니다!' }}"
-                    </div>
                     <div class="req-actions">
-                        <button class="btn-action reject" @click="rejectMember(req)">
-                            <el-icon><Close /></el-icon> 거절
-                        </button>
                         <button class="btn-action approve" @click="approveMember(req)">
                             <el-icon><Check /></el-icon> 승인
                         </button>
@@ -329,107 +320,88 @@ const rejectMember = async (member) => {
 
 /* Application List Grid */
 .application-list {
-    padding: 24px;
-    background: #F9FAFB;
+    padding: 0;
+    background: white;
 }
 
 .requests-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 20px;
-}
-
-.request-card {
-    background: white;
-    border-radius: 16px;
-    padding: 20px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.03);
-    border: 1px solid #F3F4F6;
-    transition: transform 0.2s;
     display: flex;
     flex-direction: column;
 }
 
+.request-card {
+    background: white;
+    padding: 16px 24px;
+    border-bottom: 1px solid #F3F4F6;
+    display: flex;
+    align-items: center; /* Vertically center */
+    flex-direction: row; /* Horizontal layout */
+    justify-content: space-between; /* Space between info and button */
+    gap: 16px;
+    transition: background-color 0.2s;
+}
+
+.request-card:last-child {
+    border-bottom: none;
+}
+
 .request-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 16px rgba(0,0,0,0.06);
+    background-color: #F9FAFB;
 }
 
 .req-header {
     display: flex;
     align-items: center;
-    gap: 12px;
-    margin-bottom: 16px;
+    gap: 16px;
+    margin-bottom: 0; /* Remove margin as it's row layout */
+    flex: 1;
 }
 
 .req-img {
-    width: 48px;
-    height: 48px;
+    width: 44px;
+    height: 44px;
     border-radius: 50%;
     object-fit: cover;
+    border: 2px solid white;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
 .req-name {
-    font-weight: 700;
+    font-weight: 600;
     color: #1F2937;
-    font-size: 1rem;
-}
-
-.req-meta {
-    font-size: 0.85rem;
-    color: #6B7280;
-}
-
-.req-message {
-    background: #F3F4F6;
-    padding: 12px;
-    border-radius: 10px;
-    color: #4B5563;
-    font-size: 0.9rem;
-    margin-bottom: 20px;
-    line-height: 1.4;
-    font-style: italic;
-    flex-grow: 1;
+    font-size: 0.95rem;
 }
 
 .req-actions {
     display: flex;
     gap: 10px;
+    width: auto; /* Shrink to content */
 }
 
 .btn-action {
-    flex: 1;
-    padding: 10px;
+    padding: 8px 16px;
     border: none;
     border-radius: 10px;
-    font-weight: 700;
+    font-weight: 600;
+    font-size: 0.9rem;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 6px;
     transition: all 0.2s;
+    width: auto; /* Don't stretch */
 }
 
 .btn-action.approve {
-    background: linear-gradient(135deg, #6366f1, #a855f7);
+    background: #6366f1; /* Simplified color */
     color: white;
-    box-shadow: 0 4px 10px rgba(99, 102, 241, 0.2);
+    /* Removed large shadow for clearer list view */
 }
 
 .btn-action.approve:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 6px 15px rgba(99, 102, 241, 0.3);
-}
-
-.btn-action.reject {
-    background: #F3F4F6;
-    color: #6B7280;
-}
-
-.btn-action.reject:hover {
-    background: #FEF2F2;
-    color: #EF4444;
+    background-color: #4f46e5;
+    transform: none;
 }
 
 .empty-state {
@@ -447,6 +419,7 @@ const rejectMember = async (member) => {
     background-color: transparent !important;
 }
 
+/* Notification Override - Moved to non-scoped block */
 :deep(.el-tabs__item) {
     font-size: 1rem;
     font-weight: 600;
@@ -474,5 +447,33 @@ const rejectMember = async (member) => {
 .tab-badge :deep(.el-badge__content) {
     border: none;
     transform: translateY(-1px);
+}
+</style>
+
+<style>
+/* Global styles for dynamic components */
+.premium-message-box .el-message-box__btns .el-button--primary,
+.premium-message-box .el-message-box__btns .custom-confirm-btn {
+    background: #6366f1 !important;
+    background-color: #6366f1 !important;
+    border-color: #6366f1 !important;
+    color: white !important;
+    --el-button-bg-color: #6366f1 !important;
+    --el-button-border-color: #6366f1 !important;
+    --el-button-hover-bg-color: #4f46e5 !important;
+    --el-button-hover-border-color: #4f46e5 !important;
+}
+
+.premium-message-box .el-message-box__btns .el-button--primary:hover,
+.premium-message-box .el-message-box__btns .custom-confirm-btn:hover {
+    background: #4f46e5 !important;
+    background-color: #4f46e5 !important;
+    border-color: #4f46e5 !important;
+}
+
+.custom-cancel-btn:hover {
+    color: #6366f1 !important;
+    background-color: #F3F4F6 !important;
+    border-color: #D1D5DB !important;
 }
 </style>

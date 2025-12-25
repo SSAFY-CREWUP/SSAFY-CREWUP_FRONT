@@ -45,10 +45,7 @@ export const useCrewStore = defineStore('crew', {
             await crewApi.approveRequest(crewId, requestId)
             this.requests = this.requests.filter(r => r.id !== requestId)
         },
-        async rejectRequest(crewId, requestId, reason) {
-            await crewApi.rejectRequest(crewId, requestId, reason)
-            this.requests = this.requests.filter(r => r.id !== requestId)
-        },
+
         async fetchRecommendedCrews() {
             try {
                 const res = await crewApi.getRecommendedCrews()
@@ -86,32 +83,22 @@ export const useCrewStore = defineStore('crew', {
                 console.error('Failed to fetch members:', error)
                 // Fallback for demo if API fails completely
                 this.members = []
-                 const mockLeader = {
-                        id: 9999,
-                        memberId: 9999,
-                        nickname: '크루장(나)',
-                        profileImage: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png',
-                        role: 'LEADER',
-                        totalDistance: 120.5,
-                        averagePace: '5:30',
-                        joinedAt: new Date().toISOString()
-                    }
+                const mockLeader = {
+                    id: 9999,
+                    memberId: 9999,
+                    nickname: '크루장(나)',
+                    profileImage: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png',
+                    role: 'LEADER',
+                    totalDistance: 120.5,
+                    averagePace: '5:30',
+                    joinedAt: new Date().toISOString()
+                }
                 this.members.unshift(mockLeader)
             } finally {
                 this.loading = false
             }
         },
-        async approveMember(crewId, memberId) {
-            await crewApi.approveMember(crewId, memberId)
 
-            // Remove from requests list (RequestManage.vue)
-            this.requests = this.requests.filter(m => m.memberId !== memberId)
-
-            // Update members list if present (optional, usually fetchMembers is called separately)
-            // If we want to move it to members list dynamically:
-            // const approvedMember = this.requests.find(...) // but we just filtered it out. 
-            // Ideally, we should just let fetchMembers handle the members list update next time it's visited.
-        },
         async updateMemberRole(crewId, memberId, role) {
             await crewApi.updateMemberRole(crewId, memberId, role)
             const member = this.members.find(m => m.memberId === memberId)

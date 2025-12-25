@@ -146,23 +146,23 @@ export default {
             const mappedList = list.map(item => {
                 console.log('Crew Search API Item:', item) // Debug Log
                 return {
-                id: item.crewId,
-                name: item.name,
-                location: item.region,
-                members: item.memberCount,
-                image: item.crewImage,
-                activityTime: item.activityTime,
-                pace: (item.averagePace !== null && item.averagePace !== undefined) ? `${item.averagePace}` : 'N/A', // Format as string if needed, or component handles number
-                memberInfo: item.ageGroup ? `${item.ageGroup}` : '모집중',
-                ageRange: item.ageGroup ? `${item.ageGroup}` : '전연령',
-                genderLimit: (() => {
-                    // Backend returns snake_case 'gender_limit' with values '모두', '남성', '여성' (or English)
-                    const val = item.gender_limit || item.genderLimit || ''
-                    const g = val.toUpperCase()
-                    if (['MALE', '남성', '남자', 'MAN', 'M'].some(v => g.includes(v))) return '남성'
-                    if (['FEMALE', '여성', '여자', 'WOMAN', 'F', 'W'].some(v => g.includes(v))) return '여성'
-                    return '모두' // Default
-                })() 
+                    id: item.crewId,
+                    name: item.name,
+                    location: item.region,
+                    members: item.memberCount,
+                    image: item.crewImage,
+                    activityTime: item.activityTime,
+                    pace: (item.averagePace !== null && item.averagePace !== undefined) ? `${item.averagePace}` : 'N/A', // Format as string if needed, or component handles number
+                    memberInfo: item.ageGroup ? `${item.ageGroup}` : '모집중',
+                    ageRange: item.ageGroup ? `${item.ageGroup}` : '전연령',
+                    genderLimit: (() => {
+                        // Backend returns snake_case 'gender_limit' with values '모두', '남성', '여성' (or English)
+                        const val = item.gender_limit || item.genderLimit || ''
+                        const g = val.toUpperCase()
+                        if (['MALE', '남성', '남자', 'MAN', 'M'].some(v => g.includes(v))) return '남성'
+                        if (['FEMALE', '여성', '여자', 'WOMAN', 'F', 'W'].some(v => g.includes(v))) return '여성'
+                        return '모두' // Default
+                    })()
                 }
             })
             return {
@@ -230,18 +230,9 @@ export default {
             }, 500)
         })
     },
-    approveRequest(crewId, requestId) {
-        return new Promise((resolve) => {
-            setTimeout(() => {
-                resolve({ success: true })
-            }, 500)
-        })
-    },
-    rejectRequest(crewId, requestId, reason) {
-        return new Promise((resolve) => {
-            setTimeout(() => {
-                resolve({ success: true })
-            }, 500)
+    approveRequest(crewId, crewMemberId) {
+        return api.put(`/api/v1/crew/${crewId}/members/${crewMemberId}/status`, {
+            status: 'ACCEPTED'
         })
     },
     getMembers(crewId) {
@@ -250,11 +241,7 @@ export default {
     getWaitingMembers(crewId) {
         return api.get(`/api/v1/crew/${crewId}/members/waiting`)
     },
-    approveMember(crewId, memberId) {
-        return api.put(`/api/v1/crew/${crewId}/members/${memberId}/status`, {
-            status: 'ACCEPTED'
-        })
-    },
+
     updateMemberRole(crewId, memberId, role) {
         return new Promise((resolve) => {
             setTimeout(() => {
@@ -732,21 +719,21 @@ export default {
     },
     getRecommendedCrews() {
         return api.get('/api/v1/crew/recommended').then(response => {
-             const list = response.data.data || []
-             return {
-                 data: list.map(item => ({
-                     id: item.crewId,
-                     name: item.name,
-                     location: item.region,
-                     members: item.memberCount,
-                     image: item.crewImage,
-                     activityTime: item.activityTime,
-                     pace: (item.averagePace !== null && item.averagePace !== undefined) ? `${item.averagePace}` : 'N/A',
-                     ageRange: item.ageGroup ? `${item.ageGroup}` : '전연령',
-                     genderLimit: item.genderLimit || '무관',
-                     matchScore: item.matchScore || 0
-                 }))
-             }
+            const list = response.data.data || []
+            return {
+                data: list.map(item => ({
+                    id: item.crewId,
+                    name: item.name,
+                    location: item.region,
+                    members: item.memberCount,
+                    image: item.crewImage,
+                    activityTime: item.activityTime,
+                    pace: (item.averagePace !== null && item.averagePace !== undefined) ? `${item.averagePace}` : 'N/A',
+                    ageRange: item.ageGroup ? `${item.ageGroup}` : '전연령',
+                    genderLimit: item.genderLimit || '무관',
+                    matchScore: item.matchScore || 0
+                }))
+            }
         })
     },
     getMyCrews() {
