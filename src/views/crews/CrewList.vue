@@ -15,6 +15,7 @@ const crewStore = useCrewStore()
 const authStore = useAuthStore()
 const crews = ref([])
 const recommendedCrews = ref([]) // 추천 크루
+const loadingRec = ref(true) // Loading state for recommended crews
 const viewTab = ref('all') // 'all' | 'rec'
 const loading = ref(false)
 const page = ref(1)
@@ -44,7 +45,11 @@ const handleMouseMove = (e) => {
 onMounted(async () => {
   fetchCrews(true)
   // 추천 크루 조회
-  recommendedCrews.value = await crewStore.fetchRecommendedCrews()
+  try {
+    recommendedCrews.value = await crewStore.fetchRecommendedCrews()
+  } finally {
+    loadingRec.value = false
+  }
   window.addEventListener('mousemove', handleMouseMove)
 })
 
@@ -212,7 +217,29 @@ const getScoreClass = (score) => {
 
         <!-- Crew Grid -->
         <transition name="fade" mode="out-in">
-           <div v-if="viewTab === 'rec'" key="rec-grid" class="crew-grid">
+           <!-- Loading State for Rec Tab -->
+           <div v-if="viewTab === 'rec' && loadingRec" key="rec-loading" class="crew-grid">
+               <div v-for="i in 3" :key="i" class="crew-card-skeleton">
+                 <el-skeleton animated>
+                   <template #template>
+                     <el-skeleton-item variant="image" class="skeleton-image" />
+                     <div class="skeleton-content">
+                        <div class="skeleton-header">
+                           <el-skeleton-item variant="h3" style="width: 60%;" />
+                           <el-skeleton-item variant="text" style="width: 20%;" />
+                        </div>
+                        <div class="skeleton-body">
+                           <el-skeleton-item variant="text" style="width: 80%; margin-bottom: 8px;" />
+                           <el-skeleton-item variant="text" style="width: 50%;" />
+                        </div>
+                        <el-skeleton-item variant="button" class="skeleton-btn" />
+                     </div>
+                   </template>
+                 </el-skeleton>
+               </div>
+           </div>
+
+           <div v-else-if="viewTab === 'rec'" key="rec-grid" class="crew-grid">
                <div v-if="recommendedCrews.length === 0" class="empty-rec">
                    <p>아직 추천할 크루가 없어요 😢</p>
                </div>
@@ -221,6 +248,28 @@ const getScoreClass = (score) => {
                  <div class="match-score-badge" :class="getScoreClass(crew.matchScore)">
                     <span class="score-val">{{ crew.matchScore }}점</span>
                  </div>
+               </div>
+           </div>
+
+           <!-- Loading State for All Crews (Initial) -->
+           <div v-else-if="loading && crews.length === 0" key="all-loading" class="crew-grid">
+               <div v-for="i in 6" :key="i" class="crew-card-skeleton">
+                 <el-skeleton animated>
+                   <template #template>
+                     <el-skeleton-item variant="image" class="skeleton-image" />
+                     <div class="skeleton-content">
+                        <div class="skeleton-header">
+                           <el-skeleton-item variant="h3" style="width: 60%;" />
+                           <el-skeleton-item variant="text" style="width: 20%;" />
+                        </div>
+                        <div class="skeleton-body">
+                           <el-skeleton-item variant="text" style="width: 80%; margin-bottom: 8px;" />
+                           <el-skeleton-item variant="text" style="width: 50%;" />
+                        </div>
+                        <el-skeleton-item variant="button" class="skeleton-btn" />
+                     </div>
+                   </template>
+                 </el-skeleton>
                </div>
            </div>
 
@@ -549,7 +598,31 @@ const getScoreClass = (score) => {
 .fade-enter-from, .fade-leave-to { opacity: 0; }
 
 @media (max-width: 600px) {
-  .crew-grid { grid-template-columns: 1fr; }
   .list-header { flex-direction: column; align-items: flex-start; gap: 16px; }
+}
+
+/* Skeleton Styles */
+.crew-card-skeleton {
+  background: white;
+  border-radius: 20px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+.skeleton-image {
+  width: 100%;
+  height: 200px;
+}
+.skeleton-content {
+  padding: 20px;
+}
+.skeleton-header {
+  display: flex; justify-content: space-between; margin-bottom: 12px;
+}
+.skeleton-body {
+  margin-bottom: 20px;
+}
+.skeleton-btn {
+  width: 100%; height: 45px; border-radius: 14px;
 }
 </style>
