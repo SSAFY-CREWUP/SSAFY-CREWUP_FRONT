@@ -1,8 +1,9 @@
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useCrewStore } from '../../stores/crew'
-import { Search, Edit, View, ChatDotRound } from '@element-plus/icons-vue'
+import { useAuthStore } from '../../stores/auth'
+import { Search, Edit, View, ChatDotRound, Delete } from '@element-plus/icons-vue'
 
 const route = useRoute()
 const crewStore = useCrewStore()
@@ -33,6 +34,29 @@ const getCategoryClass = (cat) => {
   return 'cat-free'
 }
 
+const authStore = useAuthStore()
+
+const roleMap = {
+  'LEADER': '크루장',
+  'MANAGER': '운영진',
+  'MEMBER': '멤버',
+  'WAITING': '승인 대기',
+  'guest': '게스트'
+}
+
+const canWriteNotice = computed(() => {
+  // Demo Mode: Always allow notice creation
+  return true
+})
+
+const filteredCategories = computed(() => {
+  return categories.filter(cat => {
+    if (cat === '공지' && !canWriteNotice.value) return false
+    if (cat === '전체') return false
+    return true
+  })
+})
+
 const fetchPosts = async () => {
   loading.value = true
   try {
@@ -50,10 +74,30 @@ const fetchPosts = async () => {
 }
 
 onMounted(() => {
-  if (route.query.category) {
-    categoryFilter.value = route.query.category
+  // Ensure we have current user info and crew members for permission check
+  const init = async () => {
+    if (!crewStore.members.length) {
+      if (crewId) {
+         try {
+           await crewStore.fetchMembers(crewId)
+         } catch (e) {
+           console.error('Failed to fetch members', e)
+         }
+      }
+    }
+    
+    if (route.query.category) {
+      categoryFilter.value = route.query.category
+    }
+
+    if (crewId) {
+      fetchPosts()
+    } else {
+      console.error('Board.vue: crewId is missing')
+    }
   }
-  fetchPosts()
+  
+  init()
 })
 
 watch([currentPage, categoryFilter], () => {
@@ -114,8 +158,28 @@ const openDetailModal = async (postId) => {
       crewStore.fetchPost(crewId, postId),
       crewStore.fetchComments(crewId, postId)
     ])
+    // Inject isWriter if backend doesn't provide it
+    if (postData.isWriter === undefined && authStore.user) {
+       const uId = String(authStore.user.userId || authStore.user.id)
+       // Check against writerId or writerNickname as fallback
+       postData.isWriter = String(postData.writerId) === uId || postData.author === authStore.user.nickname
+    }
+    
+    // Apply role translation
+    if (postData.authorRole && roleMap[postData.authorRole]) {
+        postData.authorRole = roleMap[postData.authorRole]
+    }
+
     selectedPost.value = postData
-    postComments.value = commentsData
+    
+    // Process Comments for isWriter and Role Translation
+    postComments.value = commentsData.map(c => {
+        if (c.isWriter === undefined && authStore.user) {
+           const uId = String(authStore.user.userId || authStore.user.id)
+           c.isWriter = String(c.writerId) === uId || c.author === authStore.user.nickname
+        }
+        return c
+    })
     
     // Update list item views/comments to match detail
     const listItem = posts.value.find(p => p.id === postId)
@@ -127,6 +191,35 @@ const openDetailModal = async (postId) => {
     console.error('Failed to load post details', error)
   } finally {
     detailLoading.value = false
+  }
+}
+
+const handleDeletePost = async () => {
+  if (!confirm('정말 삭제하시겠습니까?')) return
+  try {
+    await crewStore.deletePost(crewId, selectedPost.value.id)
+    showDetailModal.value = false
+    fetchPosts()
+  } catch (error) {
+    console.error('Failed to delete post', error)
+    alert('삭제 실패')
+  }
+}
+
+const handleDeleteComment = async (commentId) => {
+  if (!confirm('댓글을 삭제하시겠습니까?')) return
+  try {
+    await crewStore.deleteComment(crewId, commentId)
+    // Refresh comments
+    postComments.value = await crewStore.fetchComments(crewId, selectedPost.value.id)
+    
+    // Update count in list
+    const listItem = posts.value.find(p => p.id === selectedPost.value.id)
+    if (listItem) {
+      listItem.comments = postComments.value.length
+    }
+  } catch (error) {
+    console.error('Failed to delete comment', error)
   }
 }
 
@@ -244,7 +337,7 @@ const handleAddComment = async () => {
           <label>카테고리</label>
           <el-select v-model="createForm.category" placeholder="카테고리 선택">
             <el-option
-              v-for="cat in categories.filter(c => c !== '전체')"
+              v-for="cat in filteredCategories"
               :key="cat"
               :label="cat"
               :value="cat"
@@ -293,9 +386,15 @@ const handleAddComment = async () => {
             <span class="category-badge" :class="getCategoryClass(selectedPost.category)">{{ categoryMap[selectedPost.category] || selectedPost.category }}</span>
             <span class="detail-date">{{ selectedPost.date }}</span>
           </div>
-          <div class="detail-author">
-            <span class="author-name">작성자 : {{ selectedPost.author }}</span>
-            <span class="author-role" v-if="selectedPost.authorRole">{{ selectedPost.authorRole }}</span>
+          <div class="detail-header-right">
+             <div class="detail-author">
+               <span class="author-name">작성자 : {{ selectedPost.author }}</span>
+               <span class="author-role" v-if="selectedPost.authorRole">{{ selectedPost.authorRole }}</span>
+             </div>
+             <!-- Delete Button for Author -->
+             <button v-if="selectedPost.isWriter" class="btn-delete-post" @click="handleDeletePost">
+                삭제
+             </button>
           </div>
         </div>
         
@@ -313,8 +412,19 @@ const handleAddComment = async () => {
           <ul class="comment-list" v-loading="commentSubmitting">
             <li v-for="comment in postComments" :key="comment.id" class="comment-item">
               <div class="comment-header">
-                <span class="comment-author">{{ comment.author }}</span>
-                <span class="comment-date">{{ comment.date }}</span>
+                <div class="comment-info">
+                   <span class="comment-author">{{ comment.author }}</span>
+                   <span class="comment-date">{{ comment.date }}</span>
+                </div>
+                <el-button 
+                  v-if="comment.isWriter" 
+                  type="danger" 
+                  link 
+                  size="small" 
+                  @click="handleDeleteComment(comment.id)"
+                >
+                   <el-icon><Delete /></el-icon>
+                </el-button>
               </div>
               <div class="comment-content">{{ comment.content }}</div>
             </li>
@@ -796,6 +906,34 @@ const handleAddComment = async () => {
   font-size: 0.95rem;
   color: #6B7280;
   line-height: 1.5;
+}
+
+.detail-header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.btn-delete-post {
+  background: none;
+  border: 1px solid #fee2e2;
+  color: #ef4444;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-delete-post:hover {
+  background: #fef2f2;
+}
+
+.comment-info {
+  display: flex;
+  gap: 8px;
+  align-items: center;
 }
 
 .loading-state {

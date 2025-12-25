@@ -57,11 +57,17 @@ const initMap = () => {
       lat: latlng.getLat(), 
       lng: latlng.getLng() 
     })
+    map.panTo(latlng)
   })
 
   // Draw initial path if exists
   if (courseStore.course.path.length > 0) {
       renderPath(courseStore.course.path)
+      
+      // Fit bounds to show entire course initially
+      const bounds = new window.kakao.maps.LatLngBounds()
+      courseStore.course.path.forEach(p => bounds.extend(new window.kakao.maps.LatLng(p.lat, p.lng)))
+      map.setBounds(bounds)
   }
 }
 
@@ -77,9 +83,8 @@ const renderPath = (newPath) => {
     const position = new window.kakao.maps.LatLng(point.lat, point.lng)
     
     // Center map on the first point
-    if (index === 0) {
-        map.setCenter(position)
-    }
+    // Center on first point REMOVED (User Request: Don't snap to start)
+
 
     let imageSrc = 'https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/marker_red.png'
     if (index === 0) imageSrc = 'https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/red_b.png'

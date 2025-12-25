@@ -413,6 +413,9 @@ export default {
 
         return api.post(`/api/v1/crew/${crewId}/boards`, payload)
     },
+    deletePost(crewId, postId) {
+        return api.delete(`/api/v1/crew/${crewId}/boards/${postId}`)
+    },
     getComments(crewId, postId) {
         return api.get(`/api/v1/crew/${crewId}/boards/${postId}/comments`).then(response => {
             const list = response.data.data || []
@@ -435,6 +438,9 @@ export default {
         return api.post(`/api/v1/crew/${crewId}/boards/${postId}/comments`, {
             content: commentData.content
         })
+    },
+    deleteComment(crewId, commentId) {
+        return api.delete(`/api/v1/crew/${crewId}/boards/comments/${commentId}`)
     },
     // Schedule API
     getEvents(crewId) {

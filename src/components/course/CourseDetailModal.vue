@@ -358,7 +358,7 @@ const getDifficultyColor = (diff) => {
            <div class="stat-item">
               <el-icon class="stat-icon yellow"><StarFilled /></el-icon>
               <div class="stat-text">
-                <span class="value">{{ localCourse.rating ? localCourse.rating.toFixed(1) : '0.0' }}</span>
+                <span class="value">{{ (localCourse.avgRating || localCourse.rating || 0).toFixed(1) }}</span>
                 <span class="label">평점</span>
               </div>
            </div>

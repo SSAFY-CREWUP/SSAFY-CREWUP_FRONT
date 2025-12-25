@@ -140,6 +140,9 @@ export const useCrewStore = defineStore('crew', {
         async createPost(crewId, postData) {
             await crewApi.createPost(crewId, postData)
         },
+        async deletePost(crewId, postId) {
+            await crewApi.deletePost(crewId, postId)
+        },
         async fetchComments(crewId, postId) {
             const res = await crewApi.getComments(crewId, postId)
             return res.data
@@ -147,6 +150,9 @@ export const useCrewStore = defineStore('crew', {
         async addComment(crewId, postId, commentData) {
             const res = await crewApi.addComment(crewId, postId, commentData)
             return res.data
+        },
+        async deleteComment(crewId, commentId) {
+            await crewApi.deleteComment(crewId, commentId)
         },
         async fetchEvents(crewId) {
             try {

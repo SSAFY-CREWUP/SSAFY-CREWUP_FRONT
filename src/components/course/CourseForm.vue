@@ -347,6 +347,9 @@ textarea {
   border: 1px solid var(--color-border-medium);
   border-radius: 8px;
   font-size: 0.95rem;
+  font-family: inherit; /* Ensure same font */
+  letter-spacing: inherit; /* Ensure same spacing */
+  line-height: 1.5; /* Consistent line height */
   transition: border-color 0.2s;
   background: #fff;
 }

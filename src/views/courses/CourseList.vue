@@ -63,15 +63,17 @@ const fetchCourses = async () => {
       params.lng = center.getLng()
       
       // Calculate radius based on bounds (distance from center to corner)
-      const bounds = map.getBounds()
-      const ne = bounds.getNorthEast()
-      
-      // Approximate distance in meters (using spherical law of cosines or simple Euclidean for small distances)
-      // Or use Polyline to measure
-      const polyline = new window.kakao.maps.Polyline({
-        path: [center, ne]
-      })
-      params.radius = Math.round(polyline.getLength()) // Meters
+      // Only apply radius filter if NOT searching by keyword (allow global search)
+      if (!searchQuery.value) {
+        const bounds = map.getBounds()
+        const ne = bounds.getNorthEast()
+        
+        // Approximate distance in meters
+        const polyline = new window.kakao.maps.Polyline({
+          path: [center, ne]
+        })
+        params.radius = Math.round(polyline.getLength())
+      }
     } else {
        // Fallback for initial load if map isn't ready (though we moved fetch after init)
        // Optional: Default to Seoul City Hall
