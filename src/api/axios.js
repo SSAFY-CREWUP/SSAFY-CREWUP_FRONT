@@ -12,6 +12,7 @@ const api = axios.create({
 api.interceptors.request.use(config => {
     const sessionId = localStorage.getItem('sessionId')
     if (sessionId) {
+        console.log('[API Request] Adding X-Session-Id header:', sessionId)
         config.headers['X-Session-Id'] = sessionId
     }
     return config
